@@ -1,21 +1,23 @@
 import uvicorn
 import asyncio
 from fastapi import FastAPI, Form, BackgroundTasks
+from contextlib import asynccontextmanager
+from apscheduler.schedulers.background import BackgroundScheduler
 from fastapi.responses import FileResponse
-from streaming import Streaming
-from before_streaming_sum import BeforeSum
-from log_analysis import log_graph
+from streaming import Streaming, main, channels
 
-app = FastAPI()
-
-@app.post('/streaming')
-async def stream(num:int=Form(...), category:int=Form(...)):
-    st = Streaming(num, category)
-    st.run()
-    streaming_file = f'streaming_{num}.mp4'
-    like_graph = log_graph(num)
+@asynccontextmanager
+async def stream(app:FastAPI):
+    scheduler = BackgroundScheduler()
+    asyncio.create_task(main())
+    scheduler.add_job(lambda: None, 'interval', seconds = 5)
+    scheduler.start()
     
-    return FileResponse(streaming_file, media_type='video/mp4')
+    yield
+    
+    scheduler.shutdown()
+
+app = FastAPI(lifespan=stream)
     
 
 if __name__ == '__main__':
