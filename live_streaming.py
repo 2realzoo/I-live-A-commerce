@@ -1,4 +1,5 @@
 import os
+import re
 import time
 import pychrome
 import requests
@@ -6,6 +7,8 @@ import subprocess
 import shutil
 import asyncio
 import csv
+import random
+import socket
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
@@ -15,22 +18,31 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from datetime import datetime, timedelta
 
+channels = []
 
 class Streaming:
-    def __init__(self, num, category):
-        self.num = num
+    def __init__(self, category):
+        self.channel_num = None
         self.category = category
         self.ts_files = []
-        self.output_file = f'streaming_{self.num}.mp4'
+        self.output_file = None
         self.idx = 0
-        os.makedirs(f'{self.num}_data', exist_ok=True)
+        self.port = self.get_free_port() 
 
     # Selenium 설정
+    def get_free_port(self):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.bind(('', 0))
+            s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            return s.getsockname()[1]
+    
     def setting_selenium(self):
         chrome_options = Options()
-        chrome_options.add_argument("--headless") 
-        chrome_options.add_argument("--no-sandbox") 
+        chrome_options.add_argument('--headless=new') 
+        chrome_options.add_argument('--no-sandbox')
         chrome_options.add_argument("--window-size=1920x1080")
+        chrome_options.add_argument('--disable-dev-shm-usage')
+        chrome_options.add_argument(f'--remote-debugging-port={self.port}')
         service = Service(ChromeDriverManager().install())
         return service, chrome_options
 
@@ -46,6 +58,13 @@ class Streaming:
         if status.text == '라이브':
             element = wait.until(EC.presence_of_element_located((By.XPATH, '//*[@id="content"]/section[2]/div[4]/div[1]/a[2]')))
             live_url = element.get_attribute('href')
+            match = re.search(r'lives/(\d+)\?', live_url)
+            self.channel_num = match.group(1)
+            channels.append(self.channel_num)
+            os.makedirs(f'{self.category}_{self.channel_num}', exist_ok=True)
+            os.makedirs(f'{self.category}_{self.channel_num}/{self.category}_{self.channel_num}_data', exist_ok=True)
+            self.output_file = f'{self.category}_{self.channel_num}/streaming_{self.category}_{self.channel_num}.mp4'
+
         else:
             live_url = None
 
@@ -54,7 +73,7 @@ class Streaming:
 
     # 스트리밍 영상 만들기
     def download_ts_file(self, video_url, idx):
-        ts_filename = f'{self.num}_data/{idx}.ts'
+        ts_filename = f'{self.category}_{self.channel_num}/{self.category}_{self.channel_num}_data/{idx}.ts'
      
         response = requests.get(video_url, timeout=10)
         response.raise_for_status()
@@ -65,7 +84,7 @@ class Streaming:
     
     def merge_ts_to_mp4(self):
         if len(self.ts_files) > 1:
-            filelist_path = f'{self.num}_data/filelist.txt'
+            filelist_path = f'{self.category}_{self.channel_num}/{self.category}_{self.channel_num}_data/filelist.txt'
             with open(filelist_path, 'w') as f:
                 for ts in self.ts_files:
                     absolute_ts_path = os.path.abspath(ts) 
@@ -75,8 +94,6 @@ class Streaming:
                 'ffmpeg', '-y', '-f', 'concat', '-safe', '0', '-i', filelist_path,
                 '-c', 'copy', '-bsf:a', 'aac_adtstoasc', self.output_file
             ], check=True)
-        
-
 
     # 스트리밍 주소 가져오기
     def log_request(self, request, idx):
@@ -93,7 +110,7 @@ class Streaming:
             self.idx += 1
 
     async def streaming_file(self, driver):
-        browser = pychrome.Browser(url='http://localhost:7000') 
+        browser = pychrome.Browser(url=f'http://localhost:{self.port}') 
         tab = browser.list_tab()[0]
         tab.start()
         tab.Network.requestWillBeSent = self.handle_network_event
@@ -102,12 +119,21 @@ class Streaming:
         try:
             while True:
                 await asyncio.sleep(5)
-                if len(self.ts_files) == 600:
-                    return True
-        except:
+                try:
+                    mark = driver.find_element(By.XPATH, '//*[@id="content"]/div/div[1]/div[1]/div[2]/div[2]/div/svg')
+                    text = mark.get_attribute('aria-label')
+                    
+                    if text == '종료':
+                        channels.remove(self.channel_num)
+                        break
+                except Exception as e:
+                    print(f'Error : {e}')
+        except Exception as e:
+            print(f'Error : {e}')
+        finally:
             tab.stop()
-            shutil.rmtree(f'{self.num}_data')
-            os.remove(f'streaming_{self.num}.mp4')
+            shutil.rmtree(f'{self.category}_{self.channel_num}')
+            #os.remove(f'{self.category}_{self.channel_num}/streaming_{self.category}_{self.channel_num}.mp4')
 
     # 좋아요, 채팅 증가 수 가져오기
     def get_like_count(self,driver):
@@ -131,30 +157,55 @@ class Streaming:
             print(f'Error : {e}')
             return 0
     
+    def get_chat_comment(self, count, driver):
+        try:
+            chat_comment_element = driver.find_element(By.XPATH, f'//*[@id="content"]/div/div[2]/div[2]/div/div/div[2]/div/div[1]/div/div/div/div[{count}]/span/span')
+            chat_comment = chat_comment_element.text
+            return chat_comment
+        except Exception as e:
+            print(f'Error : {e}')
+            return 0
+    
     def log_results(self, log_file, elapsed_time, like_count, like_increase, chat_count_interval):
         try:
-            with open(log_file, 'a', newline='', encoding='utf-8') as f:
+            with open(log_file, 'a', newline='', encoding='utf-8-sig') as f:
                 writer = csv.writer(f)
                 writer.writerow([elapsed_time, like_count, like_increase, chat_count_interval])
     
         except Exception as e:
             print(f"Error writing to log file: {e}")   
+
+    def comment_log_results(self, comment_file, elapsed_time, comments):
+        try:
+            with open(comment_file, 'a', newline='', encoding='utf-8-sig') as f:
+                comment_writer = csv.writer(f)
+                for comment in comments:
+                    comment_writer.writerow([elapsed_time, comment])            
+        except Exception as e:
+            print(f'Error writing to comment file: {e}')
             
     async def increase_count(self,driver):
-        log_file = os.path.abspath(f'{self.num}_increase_log.csv')
-        with open(log_file, 'w', newline='', encoding='utf-8') as file:
-            writer = csv.writer(file)
+        log_file = os.path.abspath(f'{self.category}_{self.channel_num}/{self.category}_{self.channel_num}_increase_log.csv')
+        comment_file = os.path.abspath(f'{self.category}_{self.channel_num}/{self.category}_{self.channel_num}_comment_log.csv')
+        
+        with open(log_file, 'w', newline='', encoding='utf-8-sig') as f:
+            writer = csv.writer(f)
             writer.writerow(['시간', '라이크수', '라이크증가', '채팅증가수'])
-            
+        
+        with open(comment_file, 'w', newline='', encoding='utf-8-sig') as f:
+            comment_writer = csv.writer(f)
+            comment_writer.writerow(['시간', '댓글'])
+    
         start_time = time.time()
         
         pre_like_count = None
         
         while True:
+            comments = []
             like_count = self.get_like_count(driver)
             if like_count is None:
                 continue
-                
+            
             elapsed_time = timedelta(seconds=int(time.time() - start_time))
             initial_chat_count = self.get_chat_count(driver)
                 
@@ -162,7 +213,12 @@ class Streaming:
                 
             final_chat_count = self.get_chat_count(driver)
             chat_count_interval = final_chat_count - initial_chat_count
-                
+            
+            for count in range(initial_chat_count, final_chat_count+1):
+                comments.append(self.get_chat_comment(count, driver))
+            
+            self.comment_log_results(comment_file, elapsed_time, comments)
+            
             if pre_like_count != None:
                 like_increase = like_count - pre_like_count
                 self.log_results(log_file, elapsed_time, like_count, like_increase, chat_count_interval)
@@ -172,7 +228,7 @@ class Streaming:
     
     def run(self):
         service, options = self.setting_selenium()
-        options.add_argument('--remote-debugging-port=7000')
+        options.add_argument(f'--remote-debugging-port={self.port}')
         driver = webdriver.Chrome(service=service, options=options)
 
         try:
@@ -191,3 +247,12 @@ class Streaming:
         
         finally:
             driver.quit()
+
+async def main():
+    tasks = []
+    for category in range(1,10):
+        sr = Streaming(category)
+        task = asyncio.create_task(asyncio.to_thread(sr.run))
+        tasks.append(task)
+        
+    await asyncio.gather(*tasks)
