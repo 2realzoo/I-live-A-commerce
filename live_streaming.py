@@ -132,7 +132,11 @@ class Streaming:
             print(f'Error : {e}')
         finally:
             tab.stop()
+<<<<<<< HEAD:live_streaming.py
             shutil.rmtree(f'{self.category}_{self.channel_num}')
+=======
+            #shutil.rmtree(f'{self.category}_{self.channel_num}')
+>>>>>>> 3bb9afe8d0d0d7bd2b20c0eac0c9d1ed1387b26c:streaming.py
             #os.remove(f'{self.category}_{self.channel_num}/streaming_{self.category}_{self.channel_num}.mp4')
 
     # 좋아요, 채팅 증가 수 가져오기
