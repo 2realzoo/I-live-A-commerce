@@ -9,6 +9,7 @@ import asyncio
 import csv
 import random
 import socket
+import threading
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
@@ -60,7 +61,7 @@ class Streaming:
             live_url = element.get_attribute('href')
             match = re.search(r'lives/(\d+)\?', live_url)
             self.channel_num = match.group(1)
-            channels.append(self.channel_num)
+            channels.append({'Category':self.category, 'Channel':self.channel_num})
             os.makedirs(f'{self.category}_{self.channel_num}', exist_ok=True)
             os.makedirs(f'{self.category}_{self.channel_num}/{self.category}_{self.channel_num}_data', exist_ok=True)
             self.output_file = f'{self.category}_{self.channel_num}/streaming_{self.category}_{self.channel_num}.mp4'
@@ -84,7 +85,7 @@ class Streaming:
     
     def merge_ts_to_mp4(self):
         if len(self.ts_files) > 1:
-            filelist_path = f'{self.category}_{self.channel_num}/{self.category}_{self.channel_num}_data/filelist.txt'
+            filelist_path = f'{self.category}_{self.channel_num}/{self.category}_{self.channel_num}_data/filelist.txt'  
             with open(filelist_path, 'w') as f:
                 for ts in self.ts_files:
                     absolute_ts_path = os.path.abspath(ts) 
@@ -101,7 +102,8 @@ class Streaming:
         if video_url and video_url.endswith('.ts'):
             ts_filename = self.download_ts_file(video_url, idx)
             if ts_filename:
-                self.merge_ts_to_mp4()
+                timer = threading.Timer(300, self.merge_ts_to_mp4)
+                timer.start()
 
     def handle_network_event(self, **kwargs):
         request = kwargs.get('request')
@@ -124,7 +126,7 @@ class Streaming:
                     text = mark.get_attribute('aria-label')
                     
                     if text == '종료':
-                        channels.remove(self.channel_num)
+                        del channels[self.channel_num]
                         break
                 except Exception as e:
                     print(f'Error : {e}')
@@ -132,11 +134,8 @@ class Streaming:
             print(f'Error : {e}')
         finally:
             tab.stop()
-<<<<<<< HEAD:live_streaming.py
+            driver.quit()
             shutil.rmtree(f'{self.category}_{self.channel_num}')
-=======
-            #shutil.rmtree(f'{self.category}_{self.channel_num}')
->>>>>>> 3bb9afe8d0d0d7bd2b20c0eac0c9d1ed1387b26c:streaming.py
             #os.remove(f'{self.category}_{self.channel_num}/streaming_{self.category}_{self.channel_num}.mp4')
 
     # 좋아요, 채팅 증가 수 가져오기

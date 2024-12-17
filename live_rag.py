@@ -28,7 +28,7 @@ def calling_rag(db_path):
     
     return rag
 
-def insert_recommend_rag(category, channel_num):
+async def insert_recommend_rag(category, channel_num):
     db_path = calling_vector_db(category, channel_num)
     recommend_path = f'{category}_{channel_num}/recommend_file.csv'
     text_content = textract.process(recommend_path)
@@ -36,7 +36,7 @@ def insert_recommend_rag(category, channel_num):
     nest_asyncio.apply()
     rag.insert(text_content.decode('utf-8'))
     
-def insert_stt_rag(category, channel_num):
+async def insert_stt_rag(category, channel_num):
     db_path = calling_vector_db(category, channel_num)
     stt_path = f'{category}_{channel_num}/streaming_{category}_{channel_num}.txt'
     rag = calling_rag(db_path)
