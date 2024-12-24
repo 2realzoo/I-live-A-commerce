@@ -1,10 +1,10 @@
 import torch
-from moviepy.editor import VideoClip
+from moviepy.editor import VideoFileClip
 from transformers import AutoModelForSpeechSeq2Seq, AutoProcessor, pipeline
 
 #영상 -> 오디오 추출
 def video2voice(category, channel_num):
-    video = VideoClip(f'{category}_{channel_num}/streaming_{category}_{channel_num}.mp4')
+    video = VideoFileClip(f'{category}_{channel_num}/streaming_{category}_{channel_num}.mp4')
     video.audio.write_audiofile(f'{category}_{channel_num}/streaming_{category}_{channel_num}.mp3')
 
 #오디오 -> 텍스트 추출
@@ -25,8 +25,8 @@ def voice2text(category, channel_num):
         model=model,
         tokenizer=processor.tokenizer,
         feature_extractor=processor.feature_extractor,
-        max_new_tokens=512,
-        chunk_length_s=60,
+        max_new_tokens=256,
+        chunk_length_s=30,
         batch_size=16,
         return_timestamps=True,
         torch_dtype=torch_dtype,
