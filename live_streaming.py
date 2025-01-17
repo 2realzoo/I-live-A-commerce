@@ -162,12 +162,12 @@ class Streaming:
     
     def get_chat_comment(self, count, driver):
         try:
-            chat_comment_element = driver.find_element(By.XPATH, f'//*[@id="content"]/div/div[2]/div[2]/div/div/div[2]/div/div[1]/div/div/div/div[{count}]/span/span')
+            chat_comment_element = driver.find_element(By.XPATH, f'//*[@id="product-root"]/div/div/div[1]/div/div/div[3]/div[2]/div[3]/div/div[1]/div[1]/div[3]/div/div/div/div/div[{count}]/span/span')
             chat_comment = chat_comment_element.text
             return chat_comment
         except Exception as e:
             print(f'Error : {e}')
-            return 0
+            return 'empty'
     
     def log_results(self, log_file, elapsed_time, like_count, like_increase, chat_count_interval):
         try:
@@ -215,7 +215,7 @@ class Streaming:
             await asyncio.sleep(5)
                 
             final_chat_count = self.get_chat_count(driver)
-            chat_count_interval = final_chat_count - initial_chat_count
+            chat_count_interval = abs(final_chat_count - initial_chat_count)
             
             for count in range(initial_chat_count, final_chat_count+1):
                 comments.append(self.get_chat_comment(count, driver))

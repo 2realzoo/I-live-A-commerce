@@ -10,6 +10,7 @@ from live_streaming import Streaming, main, channels
 from live_stt import voice2text
 from live_recommend import recommend
 from live_rag import insert_stt_rag, insert_recommend_rag
+#from live_tts import make_tts
 
 category_map = {
     '뷰티' : 1,
@@ -32,6 +33,7 @@ def update(category, channel):
     
     #voice2text(category, channel_num)
     #insert_stt_rag(category, channel_num)
+    #summary generation 함수
     #NER함수
     #recommend(category, channel_num, entire_topic, detail_topic)
     #insert_recommend_rag(category, channel_num)    
@@ -103,7 +105,7 @@ async def play(request:dict=Body(...)):
     #ts_file_path = Path(f'{category}_{channel_num}/{category}_{channel_num}_data/')
     #ts_file = send_video(ts_file_path)
     
-    #실시간 차트 디스플레이
+    #실시간 그래프 디스플레이
     #감성 분석 디스플레이
 
     
