@@ -37,4 +37,3 @@ def voice2text(category, channel_num):
     
     with open(f'DB/{category}_{channel_num}/streaming_{category}_{channel_num}.txt', 'w', encoding='utf-8') as f:
         f.write(result['text'])
-        

@@ -75,4 +75,3 @@ def run_cusum(category, channel_num):
     
     output_dir = f'DB/{category}_{channel_num}/{category}_{channel_num}_graph.png'
     plt.savefig(output_dir, dpi=300, bbox_inches='tight')
-    
