@@ -9,7 +9,7 @@ def run_cusum(category, channel_num):
     CSV 파일의 (likeDelta, chatDelta)로부터 'score'를 계산하고,
     CUSUM(Upper) + 동적 임계치(윈도우 내 평균+ k×표준편차)로 하이라이트 지점을 찾는 예시
     """
-    csv_path = f'../{category}_{channel_num}/{category}_{channel_num}_increase_log.csv'
+    csv_path = f'DB/{category}_{channel_num}/{category}_{channel_num}_increase_log.csv'
     df = pd.read_csv(csv_path)
 
     # 하이라이트 점수 계산
@@ -73,5 +73,5 @@ def run_cusum(category, channel_num):
     plt.legend(loc='upper left')
     plt.tight_layout()
     
-    output_dir = f'{category}_{channel_num}/{category}_{channel_num}_graph.png'
+    output_dir = f'DB/{category}_{channel_num}/{category}_{channel_num}_graph.png'
     plt.savefig(output_dir, dpi=300, bbox_inches='tight')
