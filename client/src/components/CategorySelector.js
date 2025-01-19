@@ -1,6 +1,7 @@
-import React, {useEffect} from 'react';
+import React, { useEffect } from 'react';
 import styled from 'styled-components';
 import axios from 'axios';
+import { useApp } from '../AppContext';
 
 // 컨테이너 스타일
 const CategorySelectorContainer = styled.div`
@@ -34,7 +35,8 @@ const CategoryButton = styled.button`
   }
 `;
 
-function CategorySelector({ selectedCategory, setSelectedCategory, channelList, setChannelList }) {
+function CategorySelector() {
+  const { selectedCategory, setSelectedCategory, channelList, setChannelList } = useApp()
   const categories = ['뷰티', '푸드', '패션', '라이프', '여행/체험', '키즈', '테크', '취미레저', '문화생활'];
   
   // 카테고리 선택 시 실행될 함수
@@ -44,16 +46,16 @@ function CategorySelector({ selectedCategory, setSelectedCategory, channelList, 
       const response = await axios.get('/channels', {
         params: { category },
       });
-      setChannelList(response.date);
+      setChannelList(response.data);
     } catch (error) {
       console.error('Error fetching channel List:', error);
     }
   };
 
   
-  useEffect(() => {
+  // useEffect(() => {
 
-  }, [selectedCategory])
+  // }, [selectedCategory])
 
   return (
     <CategorySelectorContainer>
