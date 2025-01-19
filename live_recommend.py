@@ -79,6 +79,6 @@ def recommend(category, channel_num, entire_topic, detail_topic):
     df['similarity'] = similarity_scores
     recommendations = df.sort_values(by='similarity', ascending=False)
     
-    file_path = f'{category}_{channel_num}/recommend_file.csv'
+    file_path = f'DB/{category}_{channel_num}/recommend_file.csv'
     
     recommendations.to_csv(file_path,index=False, encoding='utf-8-sig')

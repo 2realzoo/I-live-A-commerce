@@ -20,6 +20,17 @@ from selenium.webdriver.support import expected_conditions as EC
 from datetime import datetime, timedelta
 
 channels = []
+category_map = {
+    1 : '뷰티',
+    2 : '푸드',
+    3 : '패션',
+    4 : '라이프',
+    5 : '여행/체험',
+    6 : '키즈',
+    7 : '테크',
+    8 : '취미레저',
+    9 : '문화생활' 
+}
 
 class Streaming:
     def __init__(self, category):
@@ -61,10 +72,11 @@ class Streaming:
             live_url = element.get_attribute('href')
             match = re.search(r'lives/(\d+)\?', live_url)
             self.channel_num = match.group(1)
-            channels.append({'Category':self.category, 'Channel':self.channel_num})
-            os.makedirs(f'{self.category}_{self.channel_num}', exist_ok=True)
-            os.makedirs(f'{self.category}_{self.channel_num}/{self.category}_{self.channel_num}_data', exist_ok=True)
-            self.output_file = f'{self.category}_{self.channel_num}/streaming_{self.category}_{self.channel_num}.mp4'
+            category_str = category_map[self.category]
+            channels.append({'Category':category_str, 'Channel':self.channel_num})
+            os.makedirs(f'DB/{self.category}_{self.channel_num}', exist_ok=True)
+            os.makedirs(f'DB/{self.category}_{self.channel_num}/{self.category}_{self.channel_num}_data', exist_ok=True)
+            self.output_file = f'DB/{self.category}_{self.channel_num}/streaming_{self.category}_{self.channel_num}.mp4'
 
         else:
             live_url = None
@@ -74,7 +86,7 @@ class Streaming:
 
     # 스트리밍 영상 만들기
     def download_ts_file(self, video_url, idx):
-        ts_filename = f'{self.category}_{self.channel_num}/{self.category}_{self.channel_num}_data/{idx}.ts'
+        ts_filename = f'DB/{self.category}_{self.channel_num}/{self.category}_{self.channel_num}_data/{idx}.ts'
      
         response = requests.get(video_url, timeout=10)
         response.raise_for_status()
@@ -85,7 +97,7 @@ class Streaming:
     
     def merge_ts_to_mp4(self):
         if len(self.ts_files) > 1:
-            filelist_path = f'{self.category}_{self.channel_num}/{self.category}_{self.channel_num}_data/filelist.txt'  
+            filelist_path = f'DB/{self.category}_{self.channel_num}/{self.category}_{self.channel_num}_data/filelist.txt'  
             with open(filelist_path, 'w') as f:
                 for ts in self.ts_files:
                     absolute_ts_path = os.path.abspath(ts) 
@@ -95,14 +107,40 @@ class Streaming:
                 'ffmpeg', '-y', '-f', 'concat', '-safe', '0', '-i', filelist_path,
                 '-c', 'copy', '-bsf:a', 'aac_adtstoasc', self.output_file
             ], check=True)
+            
 
+    def make_m3u8(self):
+        
+        m3u8_path = f'DB/{self.category}_{self.channel_num}/{self.category}_{self.channel_num}_data/output.m3u8' 
+        with open(m3u8_path, 'w') as f:
+            current_time = datetime.utcnow()
+    
+            # m3u8 헤더 작성
+            f.write("#EXTM3U\n")
+            f.write("#EXT-X-VERSION:3\n")
+            f.write("#EXT-X-ALLOW-CACHE:NO\n")
+            f.write("#EXT-X-TARGETDURATION:2\n")
+            f.write("#EXT-X-MEDIA-SEQUENCE:0\n")
+            f.write("#EXT-X-DISCONTINUITY-SEQUENCE:0\n")
+            f.write(f"#EXT-X-DATERANGE:ID=\"nmss-daterange\",START-DATE=\"{current_time.isoformat()}Z\"\n")
+            f.write(f"#EXT-X-PROGRAM-DATE-TIME:{current_time.isoformat()}Z\n")
+            f.write("\n")
+
+            for ts_file in self.ts_files:
+                f.write("#EXTINF:2.000000,\n")
+                f.write(f"{ts_file}\n")
+          
+                current_time += timedelta(seconds=2)
+                f.write(f"#EXT-X-PROGRAM-DATE-TIME:{current_time.isoformat()}Z\n")
+    
     # 스트리밍 주소 가져오기
     def log_request(self, request, idx):
         video_url = request.get('url')
         if video_url and video_url.endswith('.ts'):
             ts_filename = self.download_ts_file(video_url, idx)
             if ts_filename:
-                timer = threading.Timer(300, self.merge_ts_to_mp4)
+                self.make_m3u8()
+                timer = threading.Timer(100, self.merge_ts_to_mp4)
                 timer.start()
 
     def handle_network_event(self, **kwargs):
@@ -162,12 +200,12 @@ class Streaming:
     
     def get_chat_comment(self, count, driver):
         try:
-            chat_comment_element = driver.find_element(By.XPATH, f'//*[@id="content"]/div/div[2]/div[2]/div/div/div[2]/div/div[1]/div/div/div/div[{count}]/span/span')
+            chat_comment_element = driver.find_element(By.XPATH, f'//*[@id="product-root"]/div/div/div[1]/div/div/div[3]/div[2]/div[3]/div/div[1]/div[1]/div[3]/div/div/div/div/div[{count}]/span/span')
             chat_comment = chat_comment_element.text
             return chat_comment
         except Exception as e:
             print(f'Error : {e}')
-            return 0
+            return 'empty'
     
     def log_results(self, log_file, elapsed_time, like_count, like_increase, chat_count_interval):
         try:
@@ -188,8 +226,8 @@ class Streaming:
             print(f'Error writing to comment file: {e}')
             
     async def increase_count(self,driver):
-        log_file = os.path.abspath(f'{self.category}_{self.channel_num}/{self.category}_{self.channel_num}_increase_log.csv')
-        comment_file = os.path.abspath(f'{self.category}_{self.channel_num}/{self.category}_{self.channel_num}_comment_log.csv')
+        log_file = os.path.abspath(f'DB/{self.category}_{self.channel_num}/{self.category}_{self.channel_num}_increase_log.csv')
+        comment_file = os.path.abspath(f'DB/{self.category}_{self.channel_num}/{self.category}_{self.channel_num}_comment_log.csv')
         
         with open(log_file, 'w', newline='', encoding='utf-8-sig') as f:
             writer = csv.writer(f)
@@ -215,7 +253,7 @@ class Streaming:
             await asyncio.sleep(5)
                 
             final_chat_count = self.get_chat_count(driver)
-            chat_count_interval = final_chat_count - initial_chat_count
+            chat_count_interval = abs(final_chat_count - initial_chat_count)
             
             for count in range(initial_chat_count, final_chat_count+1):
                 comments.append(self.get_chat_comment(count, driver))

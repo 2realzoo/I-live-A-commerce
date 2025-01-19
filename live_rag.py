@@ -6,7 +6,7 @@ from lightrag.llm import ollama_model_complete, ollama_embedding
 from lightrag.utils import EmbeddingFunc
 
 def calling_vector_db(category, channel_num):    
-    db_path = f'./{category}_{channel_num}/{category}_{channel_num}_db'
+    db_path = f'DB/{category}_{channel_num}/{category}_{channel_num}_db'
     if not os.path.exists(db_path):
         os.mkdir(db_path)
     return db_path
@@ -30,7 +30,7 @@ def calling_rag(db_path):
 
 async def insert_recommend_rag(category, channel_num):
     db_path = calling_vector_db(category, channel_num)
-    recommend_path = f'{category}_{channel_num}/recommend_file.csv'
+    recommend_path = f'DB/{category}_{channel_num}/recommend_file.csv'
     text_content = textract.process(recommend_path)
     rag = calling_rag(db_path)
     nest_asyncio.apply()
@@ -38,10 +38,9 @@ async def insert_recommend_rag(category, channel_num):
     
 async def insert_stt_rag(category, channel_num):
     db_path = calling_vector_db(category, channel_num)
-    stt_path = f'{category}_{channel_num}/streaming_{category}_{channel_num}.txt'
+    stt_path = f'DB/{category}_{channel_num}/streaming_{category}_{channel_num}.txt'
     rag = calling_rag(db_path)
     nest_asyncio.apply()
     
     with open(stt_path) as f:
         rag.insert(f.read())
-        
