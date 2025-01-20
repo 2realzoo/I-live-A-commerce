@@ -29,15 +29,14 @@ category_map = {
 
 #패시브 작동
 #방송당 300초 주기로 업데이트
-def update(category, channel):
-    category = category
+def update(category_str, channel):
+    category = category_map.get(category_str, 0)
     channel_num = channel
     
     #run_cusum(category, channel_num)
-    #voice2text(category, channel_num)
     
+    #voice2text(category, channel_num) 
     #insert_stt_rag(category, channel_num)
-    
     #summary generation 함수
     #NER함수
     #recommend(category, channel_num, entire_topic, detail_topic)
@@ -89,12 +88,12 @@ async def home():
     
 
 #유저에게 요청이 들어왔을때 작동
-#def send_video(m3u8_file_path):
-#    m3u8_files = [f for f in os.listdir(m3u8_file_path) if f.endswith('.m3u8')]
-#    if not m3u8_files:
+#def send_video(ts_file_path):
+#    ts_files = [f for f in os.listdir(ts_file_path) if f.endswith('.ts')]
+#    if not ts_files:
 #        return None
-#    m3u8_files.sort(key=lambda f: os.path.getmtime(os.path.join(m3u8_file_path, f)), reverse=True)
-#    return os.path.join(m3u8_file_path, m3u8_files[0])
+#    ts_files.sort(key=lambda f: os.path.getmtime(os.path.join(ts_file_path, f)), reverse=True)
+#    return os.path.join(ts_file_path, ts_files[0])
 
 @app.post('/analysis')
 async def analysis(request:dict=Body(...)):
@@ -106,6 +105,7 @@ async def analysis(request:dict=Body(...)):
     #그래프 디스플레이
     graph_path = f'DB/{category}_{channel_num}/{category}_{channel_num}_graph.png'
     #감성 분석 디스플레이
+    #감성 분석 함수
     
     return JSONResponse(content={'Chart':graph_path})
     

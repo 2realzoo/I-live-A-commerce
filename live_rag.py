@@ -44,3 +44,6 @@ async def insert_stt_rag(category, channel_num):
     
     with open(stt_path) as f:
         rag.insert(f.read())
+        
+if __name__ == '__main__':
+    insert_stt_rag(1, 1552806)
