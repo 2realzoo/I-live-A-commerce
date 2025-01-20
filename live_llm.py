@@ -19,3 +19,6 @@ def calling_llm(category, channel_num, request):
     response = response.split('\n')
     
     return response
+
+if __name__ == '__main__':
+    print(calling_llm(1, 1552806))

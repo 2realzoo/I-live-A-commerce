@@ -4,8 +4,8 @@ from transformers import AutoModelForSpeechSeq2Seq, AutoProcessor, pipeline
 
 #영상 -> 오디오 추출
 def video2voice(category, channel_num):
-    video = VideoFileClip(f'{category}_{channel_num}/streaming_{category}_{channel_num}.mp4')
-    video.audio.write_audiofile(f'{category}_{channel_num}/streaming_{category}_{channel_num}.mp3')
+    video = VideoFileClip(f'DB/{category}_{channel_num}/streaming_{category}_{channel_num}.mp4')
+    video.audio.write_audiofile(f'DB/{category}_{channel_num}/streaming_{category}_{channel_num}.mp3')
 
 #오디오 -> 텍스트 추출
 def voice2text(category, channel_num):
@@ -33,7 +33,7 @@ def voice2text(category, channel_num):
         device=device
     )
     
-    result = pipe(f'{category}_{channel_num}/streaming_{category}_{channel_num}.mp3')
+    result = pipe(f'DB/{category}_{channel_num}/streaming_{category}_{channel_num}.mp3')
     
-    with open(f'{category}_{channel_num}/streaming_{category}_{channel_num}.txt', 'w', encoding='utf-8') as f:
+    with open(f'DB/{category}_{channel_num}/streaming_{category}_{channel_num}.txt', 'w', encoding='utf-8') as f:
         f.write(result['text'])

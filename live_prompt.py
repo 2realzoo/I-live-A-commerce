@@ -29,4 +29,3 @@ def calling_prompt(category, channel_num):
     )
     
     return llm_prompt
-    
