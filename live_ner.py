@@ -3,21 +3,11 @@ logging.set_verbosity_error()
 import sys, os, torch
 import numpy as np
 sys.path.insert(0, '../')
-import label
+import live_ner_label
 import kss
 
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"]="0"
-
-#############################################################################################################
-"""
-    predict(text, tokenizer, model) : 추론 함수.
-    - 문장을 입력받아 model input 에 맞게 변환.
-    - model에 입력 후 추론 클래스들을 output으로 반환.
-    input : text (text를 tokneizer한 결과물을 넣음)
-    output : word, label, desc (dict형태로 토큰에 대한 결과 반환)
-"""
-###############################################################################################################
 
 # tokenizer 및 model 불러오기
 tokenizer = AutoTokenizer.from_pretrained("KPF/KPF-bert-ner")
@@ -85,7 +75,7 @@ def ner_predict(text):
                 token_predictions = outputs[0].argmax(dim=2)
                 token_prediction_list = token_predictions.squeeze(0).tolist()
 
-                pred = [label.id2label[l] for l in token_prediction_list]
+                pred = [live_ner_label.id2label[l] for l in token_prediction_list]
 
                 pred_str = np.concatenate((pred_str, pred))
         else:
@@ -95,7 +85,7 @@ def ner_predict(text):
             token_predictions = outputs[0].argmax(dim=2)
             token_prediction_list = token_predictions.squeeze(0).tolist()
 
-            pred_str = [label.id2label[l] for l in token_prediction_list]
+            pred_str = [live_ner_label.id2label[l] for l in token_prediction_list]
         tt_tokenized = tokenizer(sent).encodings[0].tokens
 
         # decoding_ner_sentence = ""
@@ -144,7 +134,7 @@ def ner_predict(text):
                     decoding_ner_sentence += ':' + prev_entity_tag+ '>' + token
                     is_prev_entity = False
                     is_there_B_before_I = False
-                    word_list.append({"word" : _word, "label" : prev_entity_tag, "desc" : label.ner_code[prev_entity_tag]})
+                    word_list.append({"word" : _word, "label" : prev_entity_tag, "desc" : live_ner_label.ner_code[prev_entity_tag]})
                     _word = ""
                 else:
                     decoding_ner_sentence += token
@@ -152,19 +142,5 @@ def ner_predict(text):
     # print("OUTPUT")
     # print("sentence : ", decoding_ner_sentence)
     # print("result : ", word_list)
-    return word_list
-
-##################################################################################################################
-"""
-    추론 함수를 실행하는 메인 함수.
-"""
-####################################################################################################################
-
-if __name__ == "__main__":
-    
-    text = """
-    1일 0 9시까지 최소 20만 3038명이 코로나19에 신규 확진되어 역대 최다 기록을 갈아치웠다.
-    """
-
-    list = ner_predict(text)
-    print(list)
+    live_word = ' '.join(w['word'] for w in word_list)
+    return live_word

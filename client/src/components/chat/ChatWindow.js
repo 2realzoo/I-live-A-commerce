@@ -2,13 +2,14 @@ import React from 'react';
 import styled from 'styled-components';
 import { useApp } from '../../AppContext';
 
+// 채팅 창 스타일
 const WindowContainer = styled.div`
   padding: 10px;
   border: 1px solid #ddd;
-  border-radius: 10px;
   height: 300px;
   min-width: 240px;
   max-width: 100%;
+  width: 100%;
   overflow-y: auto;
   background-color: #f9f9f9;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
@@ -17,11 +18,13 @@ const WindowContainer = styled.div`
   gap: 10px;
 `;
 
+// 메시지 컨테이너 스타일
 const MessageContainer = styled.div`
   display: flex;
   justify-content: ${(props) => (props.isUser ? 'flex-end' : 'flex-start')};
 `;
 
+// 말풍선 스타일
 const Message = styled.div`
   padding: 10px 15px;
   border-radius: 20px;
@@ -39,8 +42,16 @@ const Message = styled.div`
     top: 50%;
     ${(props) =>
       props.isUser
-        ? 'right: -10px; border-width: 10px 0 10px 10px; border-color: transparent transparent transparent #d1f7c4;'
-        : 'left: -10px; border-width: 10px 10px 10px 0; border-color: transparent #ffffff transparent transparent;'};
+        ? `
+          right: -5px;
+          border-width: 10px 0 10px 10px;
+          border-color: transparent transparent transparent #d1f7c4;
+        `
+        : `
+          left: -5px;
+          border-width: 10px 10px 10px 0;
+          border-color: transparent #ffffff transparent transparent;
+        `};
     border-style: solid;
     transform: translateY(-50%);
   }
@@ -53,7 +64,7 @@ const ChatWindow = () => {
     <WindowContainer>
       {messages.map((msg, index) => (
         <MessageContainer key={index} isUser={msg.isUser}>
-          <Message isUser={msg.isUser}>{msg}</Message>
+          <Message isUser={msg.isUser}>{msg.text}</Message>
         </MessageContainer>
       ))}
     </WindowContainer>

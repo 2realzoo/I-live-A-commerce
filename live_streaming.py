@@ -18,6 +18,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from datetime import datetime, timedelta
+from live_graph import run_cusum
 
 channels = []
 category_map = {
@@ -127,8 +128,9 @@ class Streaming:
             f.write("\n")
 
             for ts_file in self.ts_files:
+                ts = ts_file.split('/')[-1]
                 f.write("#EXTINF:2.000000,\n")
-                f.write(f"{ts_file}\n")
+                f.write(f"{ts}\n")
           
                 current_time += timedelta(seconds=2)
                 f.write(f"#EXT-X-PROGRAM-DATE-TIME:{current_time.isoformat()}Z\n")
@@ -173,7 +175,7 @@ class Streaming:
         finally:
             tab.stop()
             driver.quit()
-            shutil.rmtree(f'{self.category}_{self.channel_num}')
+            shutil.rmtree(f'DB/{self.category}_{self.channel_num}')
             #os.remove(f'{self.category}_{self.channel_num}/streaming_{self.category}_{self.channel_num}.mp4')
 
     # 좋아요, 채팅 증가 수 가져오기
@@ -265,7 +267,8 @@ class Streaming:
                 self.log_results(log_file, elapsed_time, like_count, like_increase, chat_count_interval)
                 
             pre_like_count = like_count
-        
+            run_cusum(self.category, self.channel_num)
+            
     
     def run(self):
         service, options = self.setting_selenium()

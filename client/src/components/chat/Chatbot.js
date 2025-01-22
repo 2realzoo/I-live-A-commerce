@@ -7,8 +7,7 @@ const SettingContainer = styled.div`
   display: flex;
   align-items: center; /* 수직 정렬 */
   gap: 20px; /* 컴포넌트 간 간격 */
-  padding: 10px;
-  background-color: ${(props) => props.theme.colors.background};
+  padding-bottom: 10px;
 `;
 
 // 토글 버튼 스타일
@@ -71,7 +70,7 @@ function Chatbot() {
       {/* 소리 토글 */}
       <div style={{ display: 'flex', alignItems: 'center' }}>
         <Label>챗봇 음성</Label>
-        <ToggleButton active={useVoice} onClick={handleToggle} />
+        <ToggleButton active={useVoice? 'true' : undefined} onClick={handleToggle} />
       </div>
 
       {/* 목소리 모드 선택 */}

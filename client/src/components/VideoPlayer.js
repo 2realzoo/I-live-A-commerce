@@ -1,8 +1,8 @@
 import React, { useRef, useEffect } from 'react';
 import Hls from 'hls.js';
+import { useApp } from '../AppContext';
 
 const VideoPlayer = ({ 
-  src, 
   autoPlay = true, 
   controls = true, 
   width = '100%', 
@@ -10,7 +10,10 @@ const VideoPlayer = ({
   style = {}, 
 }) => {
   const videoRef = useRef(null);
+  const { category_map, selectedCategory, selectedChannel } = useApp()
 
+  const src=`http://localhost:1700/streaming/${category_map[selectedCategory]}_${selectedChannel}/${category_map[selectedCategory]}_${selectedChannel}_data/output.m3u8`
+  
   useEffect(() => {
     const video = videoRef.current;
 
@@ -18,17 +21,16 @@ const VideoPlayer = ({
 
     // Hls.js 지원 여부 확인
     if (Hls.isSupported()) {
-      console.log('잘 되고 있음');
       const hls = new Hls();
 
       // HLS 스트림 로드
       hls.loadSource(src);
       hls.attachMedia(video);
 
-      // 실시간 업데이트를 처리하기 위해 HLS 이벤트 설정
-      hls.on(Hls.Events.MANIFEST_PARSED, () => {
-        console.log('HLS manifest loaded');
-      });
+      // // 실시간 업데이트를 처리하기 위해 HLS 이벤트 설정
+      // hls.on(Hls.Events.MANIFEST_PARSED, () => {
+      //   console.log('HLS manifest loaded');
+      // });
 
       hls.on(Hls.Events.ERROR, (event, data) => {
         if (data.fatal) {
@@ -45,9 +47,13 @@ const VideoPlayer = ({
           }
         }
       });
+      const interval = setInterval(() => {
+        hls.startLoad(); // 주기적으로 스트림 로드
+      }, 5000); // 5초마다
 
       return () => {
         // HLS 인스턴스 정리
+        clearInterval(interval);
         hls.destroy();
       };
     } 

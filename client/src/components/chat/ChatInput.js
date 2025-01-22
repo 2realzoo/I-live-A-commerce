@@ -20,9 +20,14 @@ const StyledInput = styled.input`
 `;
 
 function ChatInput() {
-  const { currentMessage, setCurrentMessage} = useApp()
+  const { currentMessage, setCurrentMessage, handleSendMessage } = useApp()
   const handleChange = (e) => {
     setCurrentMessage(e.target.value);
+  };
+  const handleEnter = (e) => {
+    if (e.key === 'Enter'){
+      handleSendMessage();
+    }
   };
 
   return (
@@ -30,6 +35,7 @@ function ChatInput() {
         type="text"
         value={currentMessage}
         onChange={handleChange}
+        onKeyDown={handleEnter}
         placeholder="채팅을 입력하세요..."
       />
   );

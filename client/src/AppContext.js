@@ -1,7 +1,31 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 import axios from 'axios';
 
 const AppContext = createContext();
+
+const INITIAL_CATEGORIZED_CHANNELS = {
+  '뷰티': [],
+  '푸드': [],
+  '패션': [],
+  '라이프': [],
+  '여행/체험': [],
+  '키즈': [],
+  '테크': [],
+  '취미레저': [],
+  '문화생활': []
+};
+
+const CATEGORY_MAP = {
+  '뷰티': 1,
+  '푸드': 2,
+  '패션': 3,
+  '라이프': 4,
+  '여행/체험': 5,
+  '키즈': 6,
+  '테크': 7,
+  '취미레저': 8,
+  '문화생활': 9
+};
 
 export const AppProvider = ({ children }) => {
   const [messages, setMessages] = useState([]); // 채팅 메시지 목록
@@ -11,21 +35,81 @@ export const AppProvider = ({ children }) => {
   const [selectedCategory, setSelectedCategory] = useState('뷰티'); // 선택된 카테고리
   const [selectedChannel, setSelectedChannel] = useState(null); // 선택된 채널
   const [sentimentScore, setSentimentScore] = useState(undefined); // 감성 분석 점수
-  const [channelList, setChannelList] = useState([]); // 채널 목록
+  const [categorizedChannels, setCategorizedChannels] = useState(INITIAL_CATEGORIZED_CHANNELS); // 채널 목록
+  const [highlightChart, setHighlightChart] = useState(undefined);
 
-  // 메시지 전송 핸들러
+  const initializeChannels = (data) => {
+    const channels = {  
+      '뷰티': [],
+      '푸드': [],
+      '패션': [],
+      '라이프': [],
+      '여행/체험': [],
+      '키즈': [],
+      '테크': [],
+      '취미레저': [],
+      '문화생활': []
+    };
+    data.forEach((item) => {
+      if (channels[item.Category]) {
+        channels[item.Category].push(item.Channel);
+      }
+    });
+    return channels;
+  };
+
+  const fetchChannels = async () => {
+    try {
+      const response = await axios.get('http://localhost:1700/home');
+      const updatedChannels = initializeChannels(response.data);
+      setCategorizedChannels(updatedChannels);
+    } catch (error) {
+      console.error('[Error] Fetching channels:', error.message);
+      console.log('Full error object:', error);
+    } 
+  };
+
+  const fetchAnalysis = async () => {
+    if (!selectedCategory || !selectedChannel) {
+      console.warn('[Warning] Category or Channel is not selected.');
+      return;
+    }
+
+    try {
+      const response = await axios.post('http://localhost:1700/analysis', {
+        Category: selectedCategory,
+        Channel: selectedChannel
+      });
+      setSentimentScore(response.data?.Score)
+    } catch (error) {
+      console.error('[Error] Fetching analysis data:', error.message);
+    }
+  };
+
+  useEffect(() => {
+    fetchChannels();
+  }, []);
+
+  // 5분마다 감정 분석 요청
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      fetchAnalysis();
+    }, 5 * 60 * 1000); // 5분 = 300,000ms
+
+    // 컴포넌트 언마운트 시 정리
+    return () => clearInterval(intervalId);
+  }, [selectedCategory, selectedChannel]); // 선택된 카테고리나 채널이 변경되면 새 interval 설정
+
   const handleSendMessage = async () => {
-    if (currentMessage.trim() === '') return; // 빈 메시지 방지
+    if (!currentMessage.trim()) return;
 
-    // 유저 메시지 추가
     setMessages((prevMessages) => [
       ...prevMessages,
-      { sender: 'user', text: currentMessage },
+      { isUser: true, text: currentMessage },
     ]);
 
     try {
-      // 서버로 POST 요청
-      const response = await axios.post('/chat', {
+      const response = await axios.post('http://localhost:1700/chat', {
         Category: selectedCategory,
         Channel: selectedChannel,
         Text: currentMessage,
@@ -33,22 +117,19 @@ export const AppProvider = ({ children }) => {
         Who: voiceName,
       });
 
-      // 서버 응답 메시지 추가
       if (response.data?.Text) {
         setMessages((prevMessages) => [
           ...prevMessages,
-          { text: response.data.Text, sender: 'bot' },
+          { text: response.data.Text, isUser: false },
         ]);
       }
 
-      // 음성 데이터 처리
       if (useVoice && response.data?.Audio) {
-        console.log('Received audio file URL:', response.data.Audio);
+        console.log('[Info] Received audio file URL:', response.data.Audio);
       }
     } catch (error) {
-      console.error('Error sending message to /chat:', error);
+      console.error('[Error] Sending message:', error.message);
     } finally {
-      // 메시지 입력창 초기화
       setCurrentMessage('');
     }
   };
@@ -71,8 +152,13 @@ export const AppProvider = ({ children }) => {
         setSelectedChannel,
         sentimentScore,
         setSentimentScore,
-        channelList,
-        setChannelList,
+        categorizedChannels,
+        setCategorizedChannels,
+        fetchChannels,
+        fetchAnalysis,
+        highlightChart,
+        setHighlightChart,
+        category_map: CATEGORY_MAP
       }}
     >
       {children}
@@ -80,5 +166,4 @@ export const AppProvider = ({ children }) => {
   );
 };
 
-// Context를 쉽게 사용할 수 있도록 제공
 export const useApp = () => useContext(AppContext);

@@ -51,7 +51,7 @@ def run_tts(category, channel_num, who, text):
     model_path = './XTTS/GPT_XTTS_Multi_Speaker_FT-December-24-2024_03+00AM-0000000/best_model_2244.pth'
     config_path = './XTTS/GPT_XTTS_Multi_Speaker_FT-December-24-2024_03+00AM-0000000/config.json'
 
-    output_dir = f'DB/{category}_{channel_num}'
+    output_dir = f'client/public/DB/{category}_{channel_num}'
     os.makedirs(output_dir, exist_ok=True)
 
     model = setup_model(config_path, model_path, tokenizer_path)

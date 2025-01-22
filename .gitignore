@@ -352,6 +352,10 @@ cython_debug/
 XTTS/
 DB/
 test/
+checkpoint/
+logs/
+lora_adapter_korquad/
+nlp/
 
 # TTS Data
 TL1/

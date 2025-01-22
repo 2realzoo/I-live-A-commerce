@@ -1,6 +1,5 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import styled from 'styled-components';
-import axios from 'axios';
 import { useApp } from '../AppContext';
 
 // 컨테이너 스타일
@@ -36,26 +35,15 @@ const CategoryButton = styled.button`
 `;
 
 function CategorySelector() {
-  const { selectedCategory, setSelectedCategory, channelList, setChannelList } = useApp()
+  const { selectedCategory, setSelectedCategory, categorizedChannels, setcategorizedChannels, fetchChannels } = useApp()
   const categories = ['뷰티', '푸드', '패션', '라이프', '여행/체험', '키즈', '테크', '취미레저', '문화생활'];
   
+
   // 카테고리 선택 시 실행될 함수
   const handleSelectCategory = async (category) => {
     setSelectedCategory(category);
-    try {
-      const response = await axios.get('/channels', {
-        params: { category },
-      });
-      setChannelList(response.data);
-    } catch (error) {
-      console.error('Error fetching channel List:', error);
-    }
+    fetchChannels();
   };
-
-  
-  // useEffect(() => {
-
-  // }, [selectedCategory])
 
   return (
     <CategorySelectorContainer>

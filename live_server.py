@@ -8,11 +8,15 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from fastapi.responses import FileResponse, JSONResponse
 from live_streaming import main, channels
 from live_stt import voice2text
-from live_recommend import recommend
-from live_rag import insert_stt_rag, insert_recommend_rag
 from live_graph import run_cusum
+from live_rag import insert_stt_rag, insert_recommend_rag
+from live_summarization import run_summary
+from live_ner import ner_predict
+from live_recommend import recommend
 from live_llm import calling_llm
 from live_tts import run_tts
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 category_map = {
     '뷰티' : 1,
@@ -33,14 +37,12 @@ def update(category_str, channel):
     category = category_map.get(category_str, 0)
     channel_num = channel
     
-    #run_cusum(category, channel_num)
-    
-    #voice2text(category, channel_num) 
-    #insert_stt_rag(category, channel_num)
-    #summary generation 함수
-    #NER함수
-    #recommend(category, channel_num, entire_topic, detail_topic)
-    #insert_recommend_rag(category, channel_num)    
+    voice2text(category, channel_num) 
+    asyncio.run(insert_stt_rag(category, channel_num))
+    summ = run_summary(category, channel_num)
+    topic = ner_predict(summ)
+    recommend(category, channel_num, topic, topic)
+    insert_recommend_rag(category, channel_num)    
 
 
 async def sync_db(scheduler):
@@ -82,34 +84,34 @@ async def stream(app:FastAPI):
 
 app = FastAPI(lifespan=stream)
 
+# CORS 설정: React 앱에서 FastAPI 서버에 접근 가능하도록 설정
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # React 앱의 URL
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 @app.get('/home')
 async def home():
     return JSONResponse(content=channels)
-    
-
-#유저에게 요청이 들어왔을때 작동
-#def send_video(ts_file_path):
-#    ts_files = [f for f in os.listdir(ts_file_path) if f.endswith('.ts')]
-#    if not ts_files:
-#        return None
-#    ts_files.sort(key=lambda f: os.path.getmtime(os.path.join(ts_file_path, f)), reverse=True)
-#    return os.path.join(ts_file_path, ts_files[0])
 
 @app.post('/analysis')
 async def analysis(request:dict=Body(...)):
     
-    category_str = request.get('Category')
-    category = category_map.get(category_str, 0)
-    channel_num = request.get('Channel')
+    # category_str = request.get('Category')
+    # category = category_map.get(category_str, 0)
+    # channel_num = request.get('Channel')
 
     #그래프 디스플레이
-    graph_path = f'DB/{category}_{channel_num}/{category}_{channel_num}_graph.png'
+    # graph_path = f'DB/{category}_{channel_num}/{category}_{channel_num}_graph.png'
     #감성 분석 디스플레이
     #감성 분석 함수
     
-    return JSONResponse(content={'Chart':graph_path})
+    return JSONResponse(content={'Score':100})
     
-@app.post('chat/')
+@app.post('/chat')
 async def chat(request:dict=Body(...)):
     
     category_str = request.get('Category')
@@ -129,7 +131,9 @@ async def chat(request:dict=Body(...)):
             return JSONResponse(content={'Text':output_txt, 'Voice': voice_path})
 
     return JSONResponse(content={'Text':output_txt, 'Voice':'/'})
-    
+
+# 정적 파일 제공: /streaming 경로에서 DB 디렉토리를 정적으로 제공
+app.mount("/streaming", StaticFiles(directory="DB"), name="streaming")
 
 if __name__ == '__main__':
-    uvicorn.run(app, host='0.0.0.0', port=1700) 
+    uvicorn.run(app, host='127.0.0.1', port=1700) 

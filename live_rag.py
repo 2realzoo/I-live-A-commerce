@@ -1,8 +1,10 @@
 import os
 import textract
 import nest_asyncio
+import asyncio
 from lightrag import LightRAG
-from lightrag.llm import ollama_model_complete, ollama_embedding
+from lightrag.llm import hf_model_complete, hf_embedding
+from transformers import AutoModel, AutoTokenizer
 from lightrag.utils import EmbeddingFunc
 
 def calling_vector_db(category, channel_num):    
@@ -14,26 +16,26 @@ def calling_vector_db(category, channel_num):
 def calling_rag(db_path):    
     rag = LightRAG(
         working_dir=db_path,
-        llm_model_func=ollama_model_complete,
-        llm_model_name='',
+        llm_model_func=hf_model_complete,
+        llm_model_name='meta-llama/Llama-3.2-3B-Instruct',
         embedding_func=EmbeddingFunc(
-            embedding_dim=768,
-            max_token_size=8192,
-            func=lambda texts: ollama_embedding(
+            embedding_dim=384,
+            max_token_size=5000,
+            func=lambda texts: hf_embedding(
                 texts,
-                embed_model='nomic-embed-text'
+                tokenizer=AutoTokenizer.from_pretrained('sentence-transformers/all-MiniLM-L6-v2'),
+                embed_model=AutoModel.from_pretrained('sentence-transformers/all-MiniLM-L6-v2')
             )
         ),
     )
     
     return rag
 
-async def insert_recommend_rag(category, channel_num):
+def insert_recommend_rag(category, channel_num):
     db_path = calling_vector_db(category, channel_num)
     recommend_path = f'DB/{category}_{channel_num}/recommend_file.csv'
     text_content = textract.process(recommend_path)
     rag = calling_rag(db_path)
-    nest_asyncio.apply()
     rag.insert(text_content.decode('utf-8'))
     
 async def insert_stt_rag(category, channel_num):
@@ -46,4 +48,4 @@ async def insert_stt_rag(category, channel_num):
         rag.insert(f.read())
         
 if __name__ == '__main__':
-    insert_stt_rag(1, 1552806)
+    asyncio.run(insert_stt_rag(7,1539266))

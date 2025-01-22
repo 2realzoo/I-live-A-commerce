@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import styled from 'styled-components';
 import { useApp } from '../AppContext';
 
@@ -40,7 +40,14 @@ const StyledSelect = styled.select`
 `;
 
 function ChannelSelector() {
-  const { selectedChannel, setSelectedChannel, channelList } = useApp();
+  const { selectedCategory, selectedChannel, setSelectedChannel, categorizedChannels } = useApp();
+
+  // 드롭다운의 첫 번째 옵션을 기본 선택값으로 설정
+  useEffect(() => {
+    if (selectedCategory && categorizedChannels[selectedCategory]?.length > 0) {
+      setSelectedChannel(categorizedChannels[selectedCategory][0]); // 첫 번째 옵션 값 설정
+    }
+  }, [selectedCategory, categorizedChannels]); // selectedCategory 또는 categorizedChannels가 변경될 때 실행
 
   const handleChange = (e) => {
     setSelectedChannel(e.target.value);
@@ -48,13 +55,14 @@ function ChannelSelector() {
 
   return (
     <SelectorContainer>
-      <Label htmlFor="channel-select">채널 선택:</Label>
+      <Label htmlFor="channel-select">채널:</Label>
       <StyledSelect
         id="channel-select"
-        value={selectedChannel}
+        value={selectedChannel || ''}
         onChange={handleChange}
       >
-        {channelList.map((ch, index) => (
+        <option value="" disabled>선택</option>
+        {categorizedChannels[selectedCategory]?.map((ch, index) => (
           <option key={index} value={ch}>
             {ch}
           </option>
