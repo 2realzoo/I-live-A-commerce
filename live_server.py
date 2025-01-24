@@ -1,6 +1,7 @@
 import uvicorn
 import asyncio
 import os
+import nest_asyncio
 from pathlib import Path
 from fastapi import FastAPI, Form, BackgroundTasks, Body
 from contextlib import asynccontextmanager
@@ -8,8 +9,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from fastapi.responses import FileResponse, JSONResponse
 from live_streaming import main, channels
 from live_stt import voice2text
-from live_graph import run_cusum
-from live_rag import insert_stt_rag, insert_recommend_rag
+from live_rag import insert_rag
 from live_summarization import run_summary
 from live_ner import ner_predict
 from live_recommend import recommend
@@ -32,19 +32,20 @@ category_map = {
 
 
 #패시브 작동
-#방송당 300초 주기로 업데이트
+#방송당 300초 주기로 업데이트    
 def update(category_str, channel):
+
     category = category_map.get(category_str, 0)
     channel_num = channel
     
     voice2text(category, channel_num) 
-    asyncio.run(insert_stt_rag(category, channel_num))
+    
     summ = run_summary(category, channel_num)
     topic = ner_predict(summ)
     recommend(category, channel_num, topic, topic)
-    insert_recommend_rag(category, channel_num)    
-
-
+    insert_rag(category, channel_num) 
+   
+  
 async def sync_db(scheduler):
     exisiting_jobs = set()
     
@@ -55,7 +56,7 @@ async def sync_db(scheduler):
         for category, channel in new_jobs:
             job_id = f'{category}_{channel}'
             scheduler.add_job(
-                update(category, channel), 
+                update,
                 'interval', 
                 seconds = 300, 
                 args = [category, channel],

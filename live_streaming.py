@@ -142,7 +142,7 @@ class Streaming:
             ts_filename = self.download_ts_file(video_url, idx)
             if ts_filename:
                 self.make_m3u8()
-                timer = threading.Timer(100, self.merge_ts_to_mp4)
+                timer = threading.Timer(210, self.merge_ts_to_mp4)
                 timer.start()
 
     def handle_network_event(self, **kwargs):

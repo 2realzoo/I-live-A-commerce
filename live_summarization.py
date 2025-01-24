@@ -51,30 +51,10 @@ def generate_summary(file_path, model, tokenizer, max_input_length=1024, max_out
 
 def run_summary(category, channel_num):
     stt_path = f'DB/{category}_{channel_num}/streaming_{category}_{channel_num}.txt'
-    with open(stt_path, "r", encoding="utf-8") as f:
-        stt_text = f.read()
-        
+    
     tokenizer = PreTrainedTokenizerFast.from_pretrained("EbanLee/kobart-summary-v3")
     model = BartForConditionalGeneration.from_pretrained("EbanLee/kobart-summary-v3")
     
-    summ = generate_summary(stt_text, model, tokenizer)
+    summ = generate_summary(stt_path, model, tokenizer)
     
     return summ
-    
-'''
-if __name__ == "__main__":
-    # 모델 및 토크나이저 로드
-    tokenizer = PreTrainedTokenizerFast.from_pretrained("EbanLee/kobart-summary-v3")
-    model = BartForConditionalGeneration.from_pretrained("EbanLee/kobart-summary-v3")
-
-    # 고정된 입력 파일 경로
-    input_file = "/home/metaai2/byeonguk_work/I-live-A-commerce/떡꼬치"
-
-    # 요약 생성
-    result = generate_summary(input_file, model, tokenizer)
-
-    # 결과 출력
-    if result:
-        print("\n== 요약 결과 ==")
-        print(result)
-'''
