@@ -19,8 +19,23 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from datetime import datetime, timedelta
 from live_graph import run_cusum
+import json
 
 channels = []
+CHANNELS_FILE = 'DB/channels.json'
+# 카테고리 매핑
+def save_channels():
+    with open(CHANNELS_FILE, 'w', encoding='utf-8') as f:
+        json.dump(channels, f, ensure_ascii=False, indent=4)
+
+def load_channels():
+    if os.path.exists(CHANNELS_FILE):
+        with open(CHANNELS_FILE, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    return []
+
+channels = load_channels()
+
 category_map = {
     1 : '뷰티',
     2 : '푸드',
@@ -75,6 +90,7 @@ class Streaming:
             self.channel_num = match.group(1)
             category_str = category_map[self.category]
             channels.append({'Category':category_str, 'Channel':self.channel_num})
+            save_channels()
             os.makedirs(f'DB/{self.category}_{self.channel_num}', exist_ok=True)
             os.makedirs(f'DB/{self.category}_{self.channel_num}/{self.category}_{self.channel_num}_data', exist_ok=True)
             self.output_file = f'DB/{self.category}_{self.channel_num}/streaming_{self.category}_{self.channel_num}.mp4'
@@ -97,21 +113,26 @@ class Streaming:
         return ts_filename
     
     def merge_ts_to_mp4(self):
+        dir_path = f'DB/{self.category}_{self.channel_num}/{self.category}_{self.channel_num}_data'
+        if not os.path.exists(dir_path):
+            print(f"Directory not found, creating: {dir_path}")
+            os.makedirs(dir_path, exist_ok=True)
+
         if len(self.ts_files) > 1:
-            filelist_path = f'DB/{self.category}_{self.channel_num}/{self.category}_{self.channel_num}_data/filelist.txt'  
+            filelist_path = os.path.join(dir_path, 'filelist.txt')
             with open(filelist_path, 'w') as f:
                 for ts in self.ts_files:
-                    absolute_ts_path = os.path.abspath(ts) 
+                    absolute_ts_path = os.path.abspath(ts)
                     f.write(f"file '{absolute_ts_path}'\n")
             
             subprocess.run([
                 'ffmpeg', '-y', '-f', 'concat', '-safe', '0', '-i', filelist_path,
                 '-c', 'copy', '-bsf:a', 'aac_adtstoasc', self.output_file
             ], check=True)
+
             
 
     def make_m3u8(self):
-        
         m3u8_path = f'DB/{self.category}_{self.channel_num}/{self.category}_{self.channel_num}_data/output.m3u8' 
         with open(m3u8_path, 'w') as f:
             current_time = datetime.utcnow()
@@ -142,7 +163,7 @@ class Streaming:
             ts_filename = self.download_ts_file(video_url, idx)
             if ts_filename:
                 self.make_m3u8()
-                timer = threading.Timer(210, self.merge_ts_to_mp4)
+                timer = threading.Timer(60, self.merge_ts_to_mp4)
                 timer.start()
 
     def handle_network_event(self, **kwargs):
@@ -167,6 +188,7 @@ class Streaming:
                     
                     if text == '종료':
                         del channels[self.channel_num]
+                        save_channels()
                         break
                 except Exception as e:
                     print(f'Error : {e}')
@@ -175,6 +197,8 @@ class Streaming:
         finally:
             tab.stop()
             driver.quit()
+            if len(self.ts_files) > 0:
+                self.merge_ts_to_mp4()
             shutil.rmtree(f'DB/{self.category}_{self.channel_num}')
             #os.remove(f'{self.category}_{self.channel_num}/streaming_{self.category}_{self.channel_num}.mp4')
 
@@ -291,6 +315,7 @@ class Streaming:
         
         finally:
             driver.quit()
+            
 
 async def main():
     tasks = []
