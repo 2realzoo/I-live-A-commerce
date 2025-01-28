@@ -1,7 +1,5 @@
 import os
 import textract
-import nest_asyncio
-import asyncio
 from lightrag import LightRAG
 from lightrag.llm import hf_model_complete, hf_embedding
 from transformers import AutoModel, AutoTokenizer

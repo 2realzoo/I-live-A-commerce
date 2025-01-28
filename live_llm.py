@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 
 load_dotenv
 
-def calling_llm(category, channel_num, question):
+async def calling_llm(category, channel_num, question):
     model_path = 'dPwlek/llama-3.2-3b_korquad'
  
     llm_model = HuggingFacePipeline.from_model_id(
@@ -17,7 +17,7 @@ def calling_llm(category, channel_num, question):
         pipeline_kwargs={'max_new_tokens': 64},
     )
     
-    llm_prompt = calling_prompt(category, channel_num)
+    llm_prompt = await calling_prompt(category, channel_num)
    
     llm_chain = LLMChain(
         llm = llm_model,

@@ -1,15 +1,13 @@
-import nest_asyncio
 from lightrag import QueryParam
 from live_rag import calling_rag, calling_vector_db
 from langchain.prompts import ChatPromptTemplate, SystemMessagePromptTemplate, HumanMessagePromptTemplate
 
-def calling_prompt(category, channel_num):
-    nest_asyncio.apply()
+async def calling_prompt(category, channel_num):
     db_path = calling_vector_db(category, channel_num)
     rag = calling_rag(db_path)
     
-    stt_data = rag.query('방송에서 말하는 상품과 이벤트를 파악하고 전체적인 내용을 분석해', param=QueryParam(mode='hybrid'))
-    recommend_data = rag.query('방송에서 말하는 상품과 관련된 similarity score 중심 기반 추천시스템 목록들을 파악해', param=QueryParam(mode='hybrid'))
+    stt_data = await rag.query('방송에서 말하는 상품과 이벤트를 파악하고 전체적인 내용을 분석해', param=QueryParam(mode='hybrid'))
+    recommend_data = await rag.query('방송에서 말하는 상품과 관련된 similarity score 중심 기반 추천시스템 목록들을 파악해', param=QueryParam(mode='hybrid'))
     
     role_prompts = [
         '당신은 라이브 커머스 방송을 시청하는 시청자들에게 정보를 제공하는 기능을 가지고 있습니다.',
