@@ -27,6 +27,7 @@ function ChatInput() {
   const handleEnter = (e) => {
     if (e.key === 'Enter'){
       handleSendMessage();
+      
     }
   };
 

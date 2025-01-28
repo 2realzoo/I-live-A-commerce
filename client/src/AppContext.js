@@ -15,6 +15,18 @@ const INITIAL_CATEGORIZED_CHANNELS = {
   '문화생활': []
 };
 
+const INITIAL_SENTIMENT_SCORES = {
+  '뷰티': {},
+  '푸드': {},
+  '패션': {},
+  '라이프': {},
+  '여행/체험': {},
+  '키즈': {},
+  '테크': {},
+  '취미레저': {},
+  '문화생활': {}
+}
+
 const CATEGORY_MAP = {
   '뷰티': 1,
   '푸드': 2,
@@ -34,9 +46,8 @@ export const AppProvider = ({ children }) => {
   const [voiceName, setVoiceName] = useState('잇섭'); // 음성 이름
   const [selectedCategory, setSelectedCategory] = useState('뷰티'); // 선택된 카테고리
   const [selectedChannel, setSelectedChannel] = useState(null); // 선택된 채널
-  const [sentimentScore, setSentimentScore] = useState(undefined); // 감성 분석 점수
+  const [sentimentScores, setSentimentScores] = useState(INITIAL_SENTIMENT_SCORES); // 감성 분석 점수
   const [categorizedChannels, setCategorizedChannels] = useState(INITIAL_CATEGORIZED_CHANNELS); // 채널 목록
-  const [highlightChart, setHighlightChart] = useState(undefined);
 
   const initializeChannels = (data) => {
     const channels = {  
@@ -60,7 +71,7 @@ export const AppProvider = ({ children }) => {
 
   const fetchChannels = async () => {
     try {
-      const response = await axios.get('http://localhost:1700/home');
+      const response = await axios.get('http://localhost:1702/home');
       const updatedChannels = initializeChannels(response.data);
       setCategorizedChannels(updatedChannels);
     } catch (error) {
@@ -76,11 +87,11 @@ export const AppProvider = ({ children }) => {
     }
 
     try {
-      const response = await axios.post('http://localhost:1700/analysis', {
+      const response = await axios.post('http://localhost:1702/analysis', {
         Category: selectedCategory,
         Channel: selectedChannel
       });
-      setSentimentScore(response.data?.Score)
+      setSentimentScores({Category: {Channel:response.data?.Score}})
     } catch (error) {
       console.error('[Error] Fetching analysis data:', error.message);
     }
@@ -88,13 +99,14 @@ export const AppProvider = ({ children }) => {
 
   useEffect(() => {
     fetchChannels();
+    fetchAnalysis();
   }, []);
 
   // 5분마다 감정 분석 요청
   useEffect(() => {
     const intervalId = setInterval(() => {
       fetchAnalysis();
-    }, 5 * 60 * 1000); // 5분 = 300,000ms
+    }, 5 * 60 * 1000);
 
     // 컴포넌트 언마운트 시 정리
     return () => clearInterval(intervalId);
@@ -109,7 +121,7 @@ export const AppProvider = ({ children }) => {
     ]);
 
     try {
-      const response = await axios.post('http://localhost:1700/chat', {
+      const response = await axios.post('http://localhost:1702/chat', {
         Category: selectedCategory,
         Channel: selectedChannel,
         Text: currentMessage,
@@ -124,8 +136,13 @@ export const AppProvider = ({ children }) => {
         ]);
       }
 
-      if (useVoice && response.data?.Audio) {
-        console.log('[Info] Received audio file URL:', response.data.Audio);
+      if (useVoice && response.data?.Audio!=='/') {
+        const audioSrc = `http://localhost:1702/db/${selectedCategory}_${selectedChannel}/voice.wav`
+        console.log(audioSrc)
+        const audio = new Audio(audioSrc);
+        audio.play().catch((error) => {
+          console.error('[Error] Playing audio:', error.message);
+        });
       }
     } catch (error) {
       console.error('[Error] Sending message:', error.message);
@@ -150,14 +167,12 @@ export const AppProvider = ({ children }) => {
         setSelectedCategory,
         selectedChannel,
         setSelectedChannel,
-        sentimentScore,
-        setSentimentScore,
+        sentimentScores,
+        setSentimentScores,
         categorizedChannels,
         setCategorizedChannels,
         fetchChannels,
         fetchAnalysis,
-        highlightChart,
-        setHighlightChart,
         category_map: CATEGORY_MAP
       }}
     >

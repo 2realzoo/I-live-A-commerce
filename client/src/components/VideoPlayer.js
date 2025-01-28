@@ -12,7 +12,7 @@ const VideoPlayer = ({
   const videoRef = useRef(null);
   const { category_map, selectedCategory, selectedChannel } = useApp()
 
-  const src=`http://localhost:1700/streaming/${category_map[selectedCategory]}_${selectedChannel}/${category_map[selectedCategory]}_${selectedChannel}_data/output.m3u8`
+  const src=`http://localhost:1702/db/${category_map[selectedCategory]}_${selectedChannel}/${category_map[selectedCategory]}_${selectedChannel}_data/output.m3u8`
   
   useEffect(() => {
     const video = videoRef.current;
