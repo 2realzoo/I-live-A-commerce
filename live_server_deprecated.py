@@ -1,7 +1,5 @@
 import uvicorn
 import asyncio
-import os
-import nest_asyncio
 from pathlib import Path
 from fastapi import FastAPI, Form, BackgroundTasks, Body
 from contextlib import asynccontextmanager
@@ -44,8 +42,8 @@ def update(category_str, channel):
     topic = ner_predict(summ)
     recommend(category, channel_num, topic, topic)
     insert_rag(category, channel_num) 
-   
-  
+    
+#AI 업데이트 함수
 async def sync_db(scheduler):
     exisiting_jobs = set()
     
@@ -72,13 +70,16 @@ async def sync_db(scheduler):
         
         await asyncio.sleep(5)
 
+#시작부터 계속 돌아가는 패시브 함수
 @asynccontextmanager
 async def stream(app:FastAPI):
-    asyncio.create_task(main())
+    asyncio.create_task(main()) #크롤링 함수
+    
+    #일정 주기마다 돌아갈 수 있도록 만듦
     scheduler = BackgroundScheduler()
     scheduler.start()
     
-    asyncio.create_task(sync_db(scheduler))
+    asyncio.create_task(sync_db(scheduler)) #AI Update 함수수
     yield
     
     scheduler.shutdown()
