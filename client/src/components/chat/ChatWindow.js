@@ -6,9 +6,7 @@ import { useApp } from '../../AppContext';
 const WindowContainer = styled.div`
   padding: 10px;
   border: 1px solid #ddd;
-  height: 300px;
-  min-width: 240px;
-  max-width: 100%;
+  height: 100%;
   width: 100%;
   overflow-y: auto;
   background-color: #f9f9f9;

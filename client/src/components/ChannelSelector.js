@@ -40,7 +40,7 @@ const StyledSelect = styled.select`
 `;
 
 function ChannelSelector() {
-  const { selectedCategory, selectedChannel, setSelectedChannel, categorizedChannels } = useApp();
+  const { selectedCategory, selectedChannel, setSelectedChannel, categorizedChannels, fetchScores } = useApp();
 
   // 드롭다운의 첫 번째 옵션을 기본 선택값으로 설정
   useEffect(() => {
@@ -49,6 +49,10 @@ function ChannelSelector() {
     }
   }, [selectedCategory, categorizedChannels]); // selectedCategory 또는 categorizedChannels가 변경될 때 실행
 
+  useEffect(() => {
+    fetchScores()
+  }, [selectedChannel]);
+  
   const handleChange = (e) => {
     setSelectedChannel(e.target.value);
   };

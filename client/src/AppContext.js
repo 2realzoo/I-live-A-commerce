@@ -80,16 +80,29 @@ export const AppProvider = ({ children }) => {
     } 
   };
 
-  // const fetchScores = async () => {
-  //   try {
-  //     const response = await axios.get('http://localhost:1702/db/sentiment_score.csv');
-  //     const score = response?.[selectedCategory]?.[selectedChannel]
-  //   }
-  // }
+  const fetchScores = async () => {
+    try {
+      const response = await axios.post('http://localhost:1702/sentiment', {
+        category:selectedCategory,
+        channel: selectedChannel,
+      });
+      const score = response.data?.score;
+      if (score !== undefined) {
+        setSentimentScores((prevScores) => ({
+          ...prevScores,
+          [selectedCategory]: {
+            ...prevScores[selectedCategory],
+            [selectedChannel]: score,
+          }
+        }));
+      }
+    } catch (error){
+      console.error("[Error] 감성 점수 가져오기 실패:", error.message);
+    }
+  }
 
   useEffect(() => {
     fetchChannels();
-    const sentiemnt = 'http://localhost:1702/db/sentiment_score.csv'
   }, []);
 
   const handleSendMessage = async () => {
@@ -102,21 +115,21 @@ export const AppProvider = ({ children }) => {
 
     try {
       const response = await axios.post('http://localhost:1702/chat', {
-        Category: selectedCategory,
-        Channel: selectedChannel,
-        Text: currentMessage,
-        Voice: useVoice,
-        Who: voiceName,
+        category: selectedCategory,
+        channel: selectedChannel,
+        text: currentMessage,
+        voice: useVoice,
+        who: voiceName,
       });
 
       if (response.data?.Text) {
         setMessages((prevMessages) => [
           ...prevMessages,
-          { text: response.data.Text, isUser: false },
+          { text: response.data.text, isUser: false },
         ]);
       }
 
-      if (useVoice && response.data?.Audio!=='/') {
+      if (useVoice && response.data?.voice!=='/') {
         const audioSrc = `http://localhost:1702/db/${selectedCategory}_${selectedChannel}/voice.wav`
         console.log(audioSrc)
         const audio = new Audio(audioSrc);
@@ -152,7 +165,8 @@ export const AppProvider = ({ children }) => {
         categorizedChannels,
         setCategorizedChannels,
         fetchChannels,
-        category_map: CATEGORY_MAP
+        category_map: CATEGORY_MAP,
+        fetchScores
       }}
     >
       {children}

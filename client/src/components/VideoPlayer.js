@@ -27,10 +27,10 @@ const StyledVideo = styled.video`
 
 const VideoPlayer = ({
   autoPlay = true,
-  controls = true,
-  width = '360px', // 세로 영상 가로 크기
-  height = '640px', // 세로 영상 세로 크기
+  controls = true
 }) => {
+  const width = '412.875px' // 세로 영상 가로 크기
+  const height = '640px'// 세로 영상 세로 크기
   const videoRef = useRef(null);
   const { category_map, selectedCategory, selectedChannel } = useApp();
 

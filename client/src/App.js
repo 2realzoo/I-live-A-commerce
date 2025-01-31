@@ -13,7 +13,7 @@ const AppContainer = styled.div`
   flex-direction: column;
   background-color: ${(props) => props.theme.colors.background};
   color: ${(props) => props.theme.colors.text};
-  font-family: ${(props) => props.theme.fonts.base};
+  font-family: ${(props) => props.theme.fonts.base}; 
 `;
 
 const HeaderSection = styled.header`
@@ -28,26 +28,22 @@ const MainSection = styled.div`
   flex: 1;
   display: flex;
   flex-direction: column;
+  padding: 0 50px
 `;
 
 const TopSection = styled.div`
   display: flex;
   flex: 1;
   padding: 10px;
-  gap: 10px; /* 가로 간격 추가 */
   box-sizing: border-box;
+  justify-content: space-evenly
 `;
 
 const VideoContainer = styled.div`
-  flex: 3; /* 비디오 크기 비율 */
   display: flex;
   flex-direction: column;
   gap: 10px;
-`;
-
-const ChatContainerWrapper = styled.div`
-  flex: 2; /* 채팅 크기 비율 */
-  background-color: ${(props) => props.theme.colors.surface};
+  align-item: start;
 `;
 
 const BottomSection = styled.div`
@@ -76,12 +72,9 @@ function App() {
             <TopSection>
               <VideoContainer>
                 <ChannelSelector />
-                <VideoPlayer autoPlay={true} controls={true} width="100%" height="auto" />
+                <VideoPlayer autoPlay={true} controls={true} />
               </VideoContainer>
-
-              <ChatContainerWrapper>
-                <ChatContainer />
-              </ChatContainerWrapper>
+              <ChatContainer />
             </TopSection>
 
             <BottomSection>

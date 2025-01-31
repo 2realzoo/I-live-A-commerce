@@ -15,6 +15,8 @@ const ChatContainerWrapper = styled.div`
   border: 1px solid ${(props) => props.theme.colors.border || '#ddd'};
   border-radius: 8px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  width: 50%;
+  margin: 60px 10px 10px 0px;
 `;
 
 // 제목 스타일
