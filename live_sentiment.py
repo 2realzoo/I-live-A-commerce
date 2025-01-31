@@ -104,7 +104,7 @@ def process_and_calculate_score(category, channel):
 
 def save_average_score(category, channel, score):
     """평균 점수를 저장합니다."""
-    result_file = f'DB/{category}_{channel}/{category}_{channel}_sentiment_score.csv'
+    result_file = f'DB/sentiment_scores.csv'
     df = pd.DataFrame([{"Category": category, "Channel": channel, "Average_Score": score}])
     df.to_csv(result_file, index=False)
     print(f"평균 점수가 {result_file}에 저장되었습니다.")
