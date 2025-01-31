@@ -7,6 +7,9 @@ from category_map import category_map
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from live_streaming import load_channels
+from pydantic import BaseModel
+import pandas as pd
+import os
 
 app = FastAPI()
 
@@ -23,25 +26,52 @@ async def home():
     channels = load_channels()
     return JSONResponse(content=channels)
 
+class Chat(BaseModel):
+    category: str
+    channel: int
+    text: str
+    voice: bool
+    who: str
+
 @app.post('/chat')
-async def chat(request: dict = Body(...)):
-    category_str = request.get('Category')
-    category = category_map.get(category_str, 0)
-    channel_num = request.get('Channel')
+async def chat(response: Chat):
+    category, channel, text, voice, who = response.category, response.channel, response.text, response.voice, response.who
+    category = category_map.get(category)
+    output_txt = await calling_llm(category, channel, text)
     
-    input_txt = request.get('Text')
-    output_txt = await calling_llm(category, channel_num, input_txt)
-    
-    voice = request.get('Voice')
-    who = request.get('Who')
+    voice = response.get('Voice')
+    who = response.get('Who')
     
     if voice:
-        voice_complete = run_tts(category, channel_num, who, output_txt)
+        voice_complete = run_tts(category, channel, who, output_txt)
         if voice_complete:
-            voice_path = f'{category}_{channel_num}/voice.wav'
-            return JSONResponse(content={'Text': output_txt, 'Voice': voice_path})
+            voice_path = f'{category}_{channel}/voice.wav'
+            return JSONResponse(content={'text': output_txt, 'voice': voice_path})
     
-    return JSONResponse(content={'Text': output_txt, 'Voice': '/'})
+    return JSONResponse(content={'text': output_txt, 'voice': '/'})
+
+class Sentiment(BaseModel):
+    category: str
+    channel: str
+    
+@app.post('/sentiment')
+async def sentiment(response: Sentiment):
+    category, channel = response.category, response.channel
+    category = category_map.get(category)
+    
+    if not os.path.exists('DB/sentiment_scores.csv'):
+        return {"score":None}
+    
+    df = pd.read_csv('DB/sentiment_scores.csv')
+    sentiment_score = df.loc[
+        (df['category']==category) & (df['channel']==int(channel))
+    ]
+    if sentiment_score.empty:
+        return {"score":None}
+    return sentiment_score.to_dict(orient='records')
+    
+
+    
 
 # 정적 파일 제공: /streaming 경로에서 DB 디렉토리를 정적으로 제공
 app.mount("/db", StaticFiles(directory="DB"), name="db")
