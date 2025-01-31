@@ -4,6 +4,8 @@ from transformers import AutoModelForSpeechSeq2Seq, AutoProcessor, pipeline
 import os
 from mutagen.mp3 import MP3
 
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+
 #영상 -> 오디오 추출
 def video2voice(category, channel_num):
     """영상에서 오디오 추출 후 MP3 파일 경로 반환."""
@@ -27,7 +29,7 @@ def get_audio_duration(mp3_path):
     return int(audio.info.length)  # 초 단위로 반환
 
 # 오디오 -> 텍스트 추출
-def voice2text(category, channel_num):
+def voice2text(category, channel_num, model, processor):
     mp3_path = video2voice(category, channel_num)
     txt_path = f'DB/{category}_{channel_num}/streaming_{category}_{channel_num}.txt'
     processed_duration_path = f'DB/{category}_{channel_num}/processed_duration.txt'
@@ -48,17 +50,17 @@ def voice2text(category, channel_num):
 
     print(f"[INFO] 새로운 처리 범위: {processed_duration}s ~ {total_duration}s")
 
-    # Whisper 모델 설정
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    # # Whisper 모델 설정
+    device = 'cpu'
     torch_dtype = torch.float16 if torch.cuda.is_available() else torch.float32
-    model_id = 'openai/whisper-large-v3'
+    # model_id = 'openai/whisper-large-v3'
 
-    model = AutoModelForSpeechSeq2Seq.from_pretrained(
-        model_id, torch_dtype=torch_dtype, low_cpu_mem_usage=True, use_safetensors=True
-    )
-    model.to(device)
+    # model = AutoModelForSpeechSeq2Seq.from_pretrained(
+    #     model_id, torch_dtype=torch_dtype, low_cpu_mem_usage=True, use_safetensors=True
+    # )
+    # model.to(device)
 
-    processor = AutoProcessor.from_pretrained(model_id)
+    # processor = AutoProcessor.from_pretrained(model_id)
     pipe = pipeline(
         'automatic-speech-recognition',
         model=model,

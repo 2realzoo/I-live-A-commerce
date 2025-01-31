@@ -1,24 +1,23 @@
-from transformers import AutoTokenizer, BertForTokenClassification, logging
+from transformers import logging
 logging.set_verbosity_error()
 import sys, os, torch
 import numpy as np
 sys.path.insert(0, '../')
 import live_ner_label
-import kss
 
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]="0"
+os.environ["CUDA_VISIBLE_DEVICES"]="1"
 
-# tokenizer 및 model 불러오기
-tokenizer = AutoTokenizer.from_pretrained("KPF/KPF-bert-ner")
-# huggingface 개체명 인식 모델 불러오기
-model = BertForTokenClassification.from_pretrained("KPF/KPF-bert-ner")
+# # tokenizer 및 model 불러오기
+# tokenizer = AutoTokenizer.from_pretrained("KPF/KPF-bert-ner")
+# # huggingface 개체명 인식 모델 불러오기
+# model = BertForTokenClassification.from_pretrained("KPF/KPF-bert-ner")
 
-def ner_predict(text):
+def ner_predict(text, model, tokenizer, splitter):
     text = text.replace('\n','')
     model.to("cuda")
 
-    sents = kss.split_sentences(text)
+    sents = splitter(text)
     decoding_ner_sentence = ""
     word_list = list()
     pred_str = list()

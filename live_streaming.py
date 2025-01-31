@@ -190,17 +190,30 @@ class Streaming:
         tab.start()
         tab.Network.requestWillBeSent = self.handle_network_event
         tab.Network.enable()
-        
+
         try:
             while True:
                 await asyncio.sleep(5)
                 try:
-                    mark = driver.find_element(By.XPATH, '//*[@id="content"]/div/div[1]/div[1]/div[2]/div[2]/div/svg')
+                    mark = driver.find_element(By.XPATH, '//*[@id="product-root"]/div/div/div[1]/div/div/div[3]/div[2]/div[1]/div/div[1]/span[1]')
                     text = mark.get_attribute('aria-label')
-                    
+
                     if text == '종료':
+                        print(f"[INFO] 라이브 종료 감지 - {self.category}_{self.channel_num}")
                         self.remove_channel_from_list(self.channel_num)
-                        break
+                        
+                        # 🔹 종료 감지 시 파일 삭제
+                        if len(self.ts_files) > 0:
+                            self.merge_ts_to_mp4()
+                        
+                        dir_path = f'DB/{self.category}_{self.channel_num}'
+                        if os.path.exists(dir_path):
+                            shutil.rmtree(dir_path)
+
+                        if os.path.exists(self.output_file):
+                            os.remove(self.output_file)
+
+                        break  # 🔹 루프 종료
                 except Exception as e:
                     print(f'Error : {e}')
         except Exception as e:
@@ -208,16 +221,7 @@ class Streaming:
         finally:
             tab.stop()
             driver.quit()
-            if len(self.ts_files) > 0:
-                self.merge_ts_to_mp4()
-            # 파일 및 디렉토리 삭제
-            dir_path = f'DB/{self.category}_{self.channel_num}'
-            if os.path.exists(dir_path):
-                shutil.rmtree(dir_path)
-            
-            # .mp4 파일 삭제 (필요한 경우)
-            if os.path.exists(self.output_file):
-                os.remove(self.output_file)
+
 
     # 좋아요, 채팅 증가 수 가져오기
     def get_like_count(self,driver):
@@ -336,7 +340,7 @@ class Streaming:
 
 async def main():
     tasks = []
-    for category in range(1,10):
+    for category in range(2,5):
         sr = Streaming(category)
         task = asyncio.create_task(asyncio.to_thread(sr.run))
         tasks.append(task)

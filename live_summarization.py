@@ -49,11 +49,8 @@ def generate_summary(file_path, model, tokenizer, max_input_length=1024, max_out
     summary = tokenizer.decode(summary_ids[0], skip_special_tokens=True)
     return clean_summary(summary)
 
-def run_summary(category, channel_num):
+def run_summary(category, channel_num, model, tokenizer):
     stt_path = f'DB/{category}_{channel_num}/streaming_{category}_{channel_num}.txt'
-    
-    tokenizer = PreTrainedTokenizerFast.from_pretrained("EbanLee/kobart-summary-v3")
-    model = BartForConditionalGeneration.from_pretrained("EbanLee/kobart-summary-v3")
     
     summ = generate_summary(stt_path, model, tokenizer)
     

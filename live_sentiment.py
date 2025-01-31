@@ -1,13 +1,6 @@
-from transformers import (
-    AutoModelForCausalLM,
-    AutoTokenizer,
-    TextStreamer
-)
+from transformers import TextStreamer
 import pandas as pd
 
-# 체크포인트 경로
-checkpoint_path = "/home/metaai2/jinjoo_work/llama_finetuning/sentiment/llama3.2-3b-sentiment-2"
-base_model = "Bllossom/llama-3.2-Korean-Bllossom-3B"
 
 # 이전에 처리된 댓글의 식별 정보를 저장
 processed_comments = set()
@@ -71,12 +64,8 @@ def calculate_sentiment_score(comments, tokenizer, model):
     return scores
 
 
-def process_and_calculate_score(category, channel):
+def run_sentiment_score(category, channel, model, tokenizer):
     """댓글을 로드하고 감정 점수 평균을 계산합니다."""
-    # 모델과 토크나이저를 글로벌 변수로 로드
-    model = AutoModelForCausalLM.from_pretrained(checkpoint_path, device_map="auto")
-    tokenizer = AutoTokenizer.from_pretrained(base_model, trust_remote_code=True)
-
 
     # 1. 새로운 댓글 로드
     new_comments = load_new_comments(category, channel)
@@ -105,7 +94,7 @@ def process_and_calculate_score(category, channel):
 def save_average_score(category, channel, score):
     """평균 점수를 저장합니다."""
     result_file = f'DB/sentiment_scores.csv'
-    df = pd.DataFrame([{"Category": category, "Channel": channel, "Average_Score": score}])
+    df = pd.DataFrame([{"category": category, "channel": channel, "score": score}])
     df.to_csv(result_file, index=False)
     print(f"평균 점수가 {result_file}에 저장되었습니다.")
 
@@ -114,4 +103,4 @@ def save_average_score(category, channel, score):
 if __name__ == "__main__":
     category = 4
     channel = 1559968
-    process_and_calculate_score(category, channel)
+    run_sentiment_score(category, channel)

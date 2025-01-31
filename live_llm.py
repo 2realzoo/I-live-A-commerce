@@ -13,7 +13,7 @@ async def calling_llm(category, channel_num, question):
     llm_model = HuggingFacePipeline.from_model_id(
         model_id = model_path,
         task = 'text-generation',
-        device=0,
+        device_map="auto",
         pipeline_kwargs={'max_new_tokens': 64},
     )
     
