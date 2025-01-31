@@ -1,79 +1,103 @@
 import React, { useRef, useEffect } from 'react';
 import Hls from 'hls.js';
 import { useApp } from '../AppContext';
+import styled from 'styled-components';
 
-const VideoPlayer = ({ 
-  autoPlay = true, 
-  controls = true, 
-  width = '100%', 
-  height = 'auto', 
-  style = {}, 
+const Container = styled.div`
+  width: ${(props) => props.width};
+  height: ${(props) => props.height};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #000;
+`;
+
+const Message = styled.div`
+  color: #fff;
+  font-size: 16px;
+  text-align: center;
+`;
+
+const StyledVideo = styled.video`
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  background-color: #000;
+`;
+
+const VideoPlayer = ({
+  autoPlay = true,
+  controls = true,
+  width = '360px', // 세로 영상 가로 크기
+  height = '640px', // 세로 영상 세로 크기
 }) => {
   const videoRef = useRef(null);
-  const { category_map, selectedCategory, selectedChannel } = useApp()
+  const { category_map, selectedCategory, selectedChannel } = useApp();
 
-  const src=`http://localhost:1702/db/${category_map[selectedCategory]}_${selectedChannel}/${category_map[selectedCategory]}_${selectedChannel}_data/output.m3u8`
-  
+  const src = selectedChannel
+    ? `http://localhost:1702/db/${category_map[selectedCategory]}_${selectedChannel}/${category_map[selectedCategory]}_${selectedChannel}_data/output.m3u8`
+    : null;
+
   useEffect(() => {
+    if (!selectedChannel) return; // 채널이 없으면 실행하지 않음
+
     const video = videoRef.current;
 
     if (!video) return;
 
-    // Hls.js 지원 여부 확인
     if (Hls.isSupported()) {
       const hls = new Hls();
 
-      // HLS 스트림 로드
       hls.loadSource(src);
       hls.attachMedia(video);
-
-      // // 실시간 업데이트를 처리하기 위해 HLS 이벤트 설정
-      // hls.on(Hls.Events.MANIFEST_PARSED, () => {
-      //   console.log('HLS manifest loaded');
-      // });
 
       hls.on(Hls.Events.ERROR, (event, data) => {
         if (data.fatal) {
           console.error('Fatal HLS error:', data);
           if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
-            console.warn('Attempting to recover from network error...');
+            console.warn('Recovering from network error...');
             hls.startLoad();
           } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
-            console.warn('Attempting to recover from media error...');
+            console.warn('Recovering from media error...');
             hls.recoverMediaError();
           } else {
-            console.error('Cannot recover from error, destroying HLS instance.');
+            console.error('Unrecoverable error, destroying HLS instance.');
             hls.destroy();
           }
         }
       });
+
       const interval = setInterval(() => {
-        hls.startLoad(); // 주기적으로 스트림 로드
-      }, 5000); // 5초마다
+        hls.startLoad();
+      }, 5000);
 
       return () => {
-        // HLS 인스턴스 정리
         clearInterval(interval);
         hls.destroy();
       };
-    } 
-    // Safari 및 HLS 네이티브 지원
-    else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
       video.src = src;
-    } 
-    // HLS 미지원 브라우저
-    else {
+    } else {
       console.warn('HLS is not supported in this browser.');
     }
-  }, [src]);
+  }, [src, selectedChannel]);
+
+  if (!selectedChannel) {
+    return (
+      <Container width={width} height={height}>
+        <Message>해당 카테고리에 영상이 없습니다.</Message>
+      </Container>
+    );
+  }
 
   return (
-    <video
-      ref={videoRef}
-      autoPlay={autoPlay}
-      controls={controls}
-      style={{ width, height, backgroundColor: '#000', ...style }}
-    />
+    <Container width={width} height={height}>
+      <StyledVideo
+        ref={videoRef}
+        autoPlay={autoPlay}
+        controls={controls}
+      />
+    </Container>
   );
 };
 

@@ -80,37 +80,17 @@ export const AppProvider = ({ children }) => {
     } 
   };
 
-  const fetchAnalysis = async () => {
-    if (!selectedCategory || !selectedChannel) {
-      console.warn('[Warning] Category or Channel is not selected.');
-      return;
-    }
-
-    try {
-      const response = await axios.post('http://localhost:1702/analysis', {
-        Category: selectedCategory,
-        Channel: selectedChannel
-      });
-      setSentimentScores({Category: {Channel:response.data?.Score}})
-    } catch (error) {
-      console.error('[Error] Fetching analysis data:', error.message);
-    }
-  };
+  // const fetchScores = async () => {
+  //   try {
+  //     const response = await axios.get('http://localhost:1702/db/sentiment_score.csv');
+  //     const score = response?.[selectedCategory]?.[selectedChannel]
+  //   }
+  // }
 
   useEffect(() => {
     fetchChannels();
-    fetchAnalysis();
+    const sentiemnt = 'http://localhost:1702/db/sentiment_score.csv'
   }, []);
-
-  // 5분마다 감정 분석 요청
-  useEffect(() => {
-    const intervalId = setInterval(() => {
-      fetchAnalysis();
-    }, 5 * 60 * 1000);
-
-    // 컴포넌트 언마운트 시 정리
-    return () => clearInterval(intervalId);
-  }, [selectedCategory, selectedChannel]); // 선택된 카테고리나 채널이 변경되면 새 interval 설정
 
   const handleSendMessage = async () => {
     if (!currentMessage.trim()) return;
@@ -172,7 +152,6 @@ export const AppProvider = ({ children }) => {
         categorizedChannels,
         setCategorizedChannels,
         fetchChannels,
-        fetchAnalysis,
         category_map: CATEGORY_MAP
       }}
     >

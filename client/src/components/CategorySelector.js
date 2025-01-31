@@ -35,7 +35,7 @@ const CategoryButton = styled.button`
 `;
 
 function CategorySelector() {
-  const { selectedCategory, setSelectedCategory, categorizedChannels, setcategorizedChannels, fetchChannels } = useApp()
+  const { selectedCategory, setSelectedCategory, categorizedChannels, setcategorizedChannels, fetchChannels, setSelectedChannel } = useApp()
   const categories = ['뷰티', '푸드', '패션', '라이프', '여행/체험', '키즈', '테크', '취미레저', '문화생활'];
   
 
@@ -43,6 +43,7 @@ function CategorySelector() {
   const handleSelectCategory = async (category) => {
     setSelectedCategory(category);
     fetchChannels();
+    setSelectedChannel(null);
   };
 
   return (
