@@ -130,7 +130,18 @@ class Streaming:
                 '-c', 'copy', '-bsf:a', 'aac_adtstoasc', self.output_file
             ], check=True)
 
-            
+    def remove_channel_from_list(self, channel_num):
+        """채널 번호를 기반으로 채널 리스트에서 해당 채널을 제거합니다."""
+        global channels
+        updated_channels = [channel for channel in channels if channel.get('Channel') != channel_num]
+        
+        if len(updated_channels) != len(channels):
+            print(f"Channel {channel_num} removed successfully.")
+        else:
+            print(f"Channel {channel_num} not found in the list.")
+        
+        channels = updated_channels
+        save_channels()
 
     def make_m3u8(self):
         m3u8_path = f'DB/{self.category}_{self.channel_num}/{self.category}_{self.channel_num}_data/output.m3u8' 
@@ -155,7 +166,8 @@ class Streaming:
           
                 current_time += timedelta(seconds=2)
                 f.write(f"#EXT-X-PROGRAM-DATE-TIME:{current_time.isoformat()}Z\n")
-    
+
+            
     # 스트리밍 주소 가져오기
     def log_request(self, request, idx):
         video_url = request.get('url')
@@ -187,8 +199,7 @@ class Streaming:
                     text = mark.get_attribute('aria-label')
                     
                     if text == '종료':
-                        del channels[self.channel_num]
-                        save_channels()
+                        self.remove_channel_from_list(self.channel_num)
                         break
                 except Exception as e:
                     print(f'Error : {e}')
@@ -199,8 +210,14 @@ class Streaming:
             driver.quit()
             if len(self.ts_files) > 0:
                 self.merge_ts_to_mp4()
-            shutil.rmtree(f'DB/{self.category}_{self.channel_num}')
-            #os.remove(f'{self.category}_{self.channel_num}/streaming_{self.category}_{self.channel_num}.mp4')
+            # 파일 및 디렉토리 삭제
+            dir_path = f'DB/{self.category}_{self.channel_num}'
+            if os.path.exists(dir_path):
+                shutil.rmtree(dir_path)
+            
+            # .mp4 파일 삭제 (필요한 경우)
+            if os.path.exists(self.output_file):
+                os.remove(self.output_file)
 
     # 좋아요, 채팅 증가 수 가져오기
     def get_like_count(self,driver):
@@ -251,7 +268,7 @@ class Streaming:
         except Exception as e:
             print(f'Error writing to comment file: {e}')
             
-    async def increase_count(self,driver):
+    async def increase_count(self, driver):
         log_file = os.path.abspath(f'DB/{self.category}_{self.channel_num}/{self.category}_{self.channel_num}_increase_log.csv')
         comment_file = os.path.abspath(f'DB/{self.category}_{self.channel_num}/{self.category}_{self.channel_num}_comment_log.csv')
         
