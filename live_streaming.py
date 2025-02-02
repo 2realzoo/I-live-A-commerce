@@ -19,23 +19,9 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from datetime import datetime, timedelta
 from live_graph import run_cusum
-import json
+from live_sentiment import run_sentiment_score
 
 channels = []
-CHANNELS_FILE = 'DB/channels.json'
-# 카테고리 매핑
-def save_channels():
-    with open(CHANNELS_FILE, 'w', encoding='utf-8') as f:
-        json.dump(channels, f, ensure_ascii=False, indent=4)
-
-def load_channels():
-    if os.path.exists(CHANNELS_FILE):
-        with open(CHANNELS_FILE, 'r', encoding='utf-8') as f:
-            return json.load(f)
-    return []
-
-channels = load_channels()
-
 category_map = {
     1 : '뷰티',
     2 : '푸드',
@@ -90,7 +76,6 @@ class Streaming:
             self.channel_num = match.group(1)
             category_str = category_map[self.category]
             channels.append({'Category':category_str, 'Channel':self.channel_num})
-            save_channels()
             os.makedirs(f'DB/{self.category}_{self.channel_num}', exist_ok=True)
             os.makedirs(f'DB/{self.category}_{self.channel_num}/{self.category}_{self.channel_num}_data', exist_ok=True)
             self.output_file = f'DB/{self.category}_{self.channel_num}/streaming_{self.category}_{self.channel_num}.mp4'
@@ -113,37 +98,21 @@ class Streaming:
         return ts_filename
     
     def merge_ts_to_mp4(self):
-        dir_path = f'DB/{self.category}_{self.channel_num}/{self.category}_{self.channel_num}_data'
-        if not os.path.exists(dir_path):
-            print(f"Directory not found, creating: {dir_path}")
-            os.makedirs(dir_path, exist_ok=True)
-
         if len(self.ts_files) > 1:
-            filelist_path = os.path.join(dir_path, 'filelist.txt')
+            filelist_path = f'DB/{self.category}_{self.channel_num}/{self.category}_{self.channel_num}_data/filelist.txt'  
             with open(filelist_path, 'w') as f:
                 for ts in self.ts_files:
-                    absolute_ts_path = os.path.abspath(ts)
+                    absolute_ts_path = os.path.abspath(ts) 
                     f.write(f"file '{absolute_ts_path}'\n")
             
             subprocess.run([
                 'ffmpeg', '-y', '-f', 'concat', '-safe', '0', '-i', filelist_path,
                 '-c', 'copy', '-bsf:a', 'aac_adtstoasc', self.output_file
             ], check=True)
-
-    def remove_channel_from_list(self, channel_num):
-        """채널 번호를 기반으로 채널 리스트에서 해당 채널을 제거합니다."""
-        global channels
-        updated_channels = [channel for channel in channels if channel.get('Channel') != channel_num]
-        
-        if len(updated_channels) != len(channels):
-            print(f"Channel {channel_num} removed successfully.")
-        else:
-            print(f"Channel {channel_num} not found in the list.")
-        
-        channels = updated_channels
-        save_channels()
+            
 
     def make_m3u8(self):
+        
         m3u8_path = f'DB/{self.category}_{self.channel_num}/{self.category}_{self.channel_num}_data/output.m3u8' 
         with open(m3u8_path, 'w') as f:
             current_time = datetime.utcnow()
@@ -160,14 +129,12 @@ class Streaming:
             f.write("\n")
 
             for ts_file in self.ts_files:
-                ts = ts_file.split('/')[-1]
                 f.write("#EXTINF:2.000000,\n")
-                f.write(f"{ts}\n")
+                f.write(f"{ts_file}\n")
           
                 current_time += timedelta(seconds=2)
                 f.write(f"#EXT-X-PROGRAM-DATE-TIME:{current_time.isoformat()}Z\n")
-
-            
+    
     # 스트리밍 주소 가져오기
     def log_request(self, request, idx):
         video_url = request.get('url')
@@ -175,7 +142,7 @@ class Streaming:
             ts_filename = self.download_ts_file(video_url, idx)
             if ts_filename:
                 self.make_m3u8()
-                timer = threading.Timer(60, self.merge_ts_to_mp4)
+                timer = threading.Timer(53, self.merge_ts_to_mp4)
                 timer.start()
 
     def handle_network_event(self, **kwargs):
@@ -190,30 +157,17 @@ class Streaming:
         tab.start()
         tab.Network.requestWillBeSent = self.handle_network_event
         tab.Network.enable()
-
+        
         try:
             while True:
                 await asyncio.sleep(5)
                 try:
-                    mark = driver.find_element(By.XPATH, '//*[@id="product-root"]/div/div/div[1]/div/div/div[3]/div[2]/div[1]/div/div[1]/span[1]')
+                    mark = driver.find_element(By.XPATH, '//*[@id="content"]/div/div[1]/div[1]/div[2]/div[2]/div/svg')
                     text = mark.get_attribute('aria-label')
-
+                    
                     if text == '종료':
-                        print(f"[INFO] 라이브 종료 감지 - {self.category}_{self.channel_num}")
-                        self.remove_channel_from_list(self.channel_num)
-                        
-                        # 🔹 종료 감지 시 파일 삭제
-                        if len(self.ts_files) > 0:
-                            self.merge_ts_to_mp4()
-                        
-                        dir_path = f'DB/{self.category}_{self.channel_num}'
-                        if os.path.exists(dir_path):
-                            shutil.rmtree(dir_path)
-
-                        if os.path.exists(self.output_file):
-                            os.remove(self.output_file)
-
-                        break  # 🔹 루프 종료
+                        del channels[self.channel_num]
+                        break
                 except Exception as e:
                     print(f'Error : {e}')
         except Exception as e:
@@ -221,7 +175,8 @@ class Streaming:
         finally:
             tab.stop()
             driver.quit()
-
+            shutil.rmtree(f'{self.category}_{self.channel_num}')
+            #os.remove(f'{self.category}_{self.channel_num}/streaming_{self.category}_{self.channel_num}.mp4')
 
     # 좋아요, 채팅 증가 수 가져오기
     def get_like_count(self,driver):
@@ -272,7 +227,7 @@ class Streaming:
         except Exception as e:
             print(f'Error writing to comment file: {e}')
             
-    async def increase_count(self, driver):
+    async def increase_count(self,driver):
         log_file = os.path.abspath(f'DB/{self.category}_{self.channel_num}/{self.category}_{self.channel_num}_increase_log.csv')
         comment_file = os.path.abspath(f'DB/{self.category}_{self.channel_num}/{self.category}_{self.channel_num}_comment_log.csv')
         
@@ -313,7 +268,9 @@ class Streaming:
                 
             pre_like_count = like_count
             run_cusum(self.category, self.channel_num)
-            
+            timer = threading.Timer(10, run_sentiment_score(self.category, self.channel_num))
+            timer.start()
+        
     
     def run(self):
         service, options = self.setting_selenium()
@@ -336,13 +293,15 @@ class Streaming:
         
         finally:
             driver.quit()
-            
 
 async def main():
     tasks = []
-    for category in range(2,5):
-        sr = Streaming(category)
-        task = asyncio.create_task(asyncio.to_thread(sr.run))
-        tasks.append(task)
+    #for category in range(1,10):
+    #    sr = Streaming(category)
+    #    task = asyncio.create_task(asyncio.to_thread(sr.run))
+    #    tasks.append(task)
+    sr = Streaming(3)
+    task = asyncio.create_task(asyncio.to_thread(sr.run))
+    tasks.append(task)
         
     await asyncio.gather(*tasks)

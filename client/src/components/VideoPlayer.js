@@ -35,7 +35,7 @@ const VideoPlayer = ({
   const { category_map, selectedCategory, selectedChannel } = useApp();
 
   const src = selectedChannel
-    ? `http://localhost:1702/db/${category_map[selectedCategory]}_${selectedChannel}/${category_map[selectedCategory]}_${selectedChannel}_data/output.m3u8`
+    ? `http://localhost:1700/db/${category_map[selectedCategory]}_${selectedChannel}/${category_map[selectedCategory]}_${selectedChannel}_data/output.m3u8`
     : null;
 
   useEffect(() => {

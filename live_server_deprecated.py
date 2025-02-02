@@ -1,5 +1,7 @@
 import uvicorn
 import asyncio
+import os
+import pandas as pd
 from pathlib import Path
 from fastapi import FastAPI, Form, BackgroundTasks, Body
 from contextlib import asynccontextmanager
@@ -41,8 +43,8 @@ def update(category_str, channel):
     summ = run_summary(category, channel_num)
     topic = ner_predict(summ)
     recommend(category, channel_num, topic, topic)
-    insert_rag(category, channel_num) 
-    
+    insert_rag(category, channel_num)
+
 #AI 업데이트 함수
 async def sync_db(scheduler):
     exisiting_jobs = set()
@@ -56,7 +58,7 @@ async def sync_db(scheduler):
             scheduler.add_job(
                 update,
                 'interval', 
-                seconds = 300, 
+                seconds = 93, 
                 args = [category, channel],
                 id = job_id
             )
@@ -70,6 +72,7 @@ async def sync_db(scheduler):
         
         await asyncio.sleep(5)
 
+
 #시작부터 계속 돌아가는 패시브 함수
 @asynccontextmanager
 async def stream(app:FastAPI):
@@ -79,7 +82,7 @@ async def stream(app:FastAPI):
     scheduler = BackgroundScheduler()
     scheduler.start()
     
-    asyncio.create_task(sync_db(scheduler)) #AI Update 함수수
+    asyncio.create_task(sync_db(scheduler)) #AI Update 함수
     yield
     
     scheduler.shutdown()
@@ -99,20 +102,23 @@ app.add_middleware(
 async def home():
     return JSONResponse(content=channels)
 
-@app.post('/analysis')
-async def analysis(request:dict=Body(...)):
+@app.post('/sentiment')
+async def sentiment(request:dict=Body(...)):
+    category_str = request.get('Category')
+    category = category_map.get(category_str, 0)
+    channel_num = request.get('Channel')
     
-    # category_str = request.get('Category')
-    # category = category_map.get(category_str, 0)
-    # channel_num = request.get('Channel')
+    if not os.path.exists('DB/sentiment_scores.csv'):
+        return {"score":None}
+    
+    df = pd.read_csv('DB/sentiment_scores.csv')
+    sentiment_score = df.loc[
+        (df['category']==category) & (df['channel']==int(channel_num))
+    ]
+    if sentiment_score.empty:
+        return {"score":None}
+    return sentiment_score.to_dict(orient='records')
 
-    #그래프 디스플레이
-    # graph_path = f'DB/{category}_{channel_num}/{category}_{channel_num}_graph.png'
-    #감성 분석 디스플레이
-    #감성 분석 함수
-    
-    return JSONResponse(content={'Score':100})
-    
 @app.post('/chat')
 async def chat(request:dict=Body(...)):
     
@@ -138,4 +144,4 @@ async def chat(request:dict=Body(...)):
 app.mount("/streaming", StaticFiles(directory="DB"), name="streaming")
 
 if __name__ == '__main__':
-    uvicorn.run(app, host='127.0.0.1', port=1700) 
+    uvicorn.run(app, host='127.0.0.1', port=1700)  

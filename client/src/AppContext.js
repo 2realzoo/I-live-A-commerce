@@ -50,7 +50,7 @@ export const AppProvider = ({ children }) => {
   const [categorizedChannels, setCategorizedChannels] = useState(INITIAL_CATEGORIZED_CHANNELS); // 채널 목록
 
   const initializeChannels = (data) => {
-    const channels = {  
+    const channels = {
       '뷰티': [],
       '푸드': [],
       '패션': [],
@@ -71,19 +71,19 @@ export const AppProvider = ({ children }) => {
 
   const fetchChannels = async () => {
     try {
-      const response = await axios.get('http://localhost:1702/home');
+      const response = await axios.get('http://localhost:1700/home');
       const updatedChannels = initializeChannels(response.data);
       setCategorizedChannels(updatedChannels);
     } catch (error) {
       console.error('[Error] Fetching channels:', error.message);
       console.log('Full error object:', error);
-    } 
+    }
   };
 
   const fetchScores = async () => {
     try {
-      const response = await axios.post('http://localhost:1702/sentiment', {
-        category:selectedCategory,
+      const response = await axios.post('http://localhost:1700/sentiment', {
+        category: selectedCategory,
         channel: selectedChannel,
       });
       const score = response.data?.score;
@@ -96,7 +96,7 @@ export const AppProvider = ({ children }) => {
           }
         }));
       }
-    } catch (error){
+    } catch (error) {
       console.error("[Error] 감성 점수 가져오기 실패:", error.message);
     }
   }
@@ -114,7 +114,7 @@ export const AppProvider = ({ children }) => {
     ]);
 
     try {
-      const response = await axios.post('http://localhost:1702/chat', {
+      const response = await axios.post('http://localhost:1700/chat', {
         category: selectedCategory,
         channel: selectedChannel,
         text: currentMessage,
@@ -129,8 +129,8 @@ export const AppProvider = ({ children }) => {
         ]);
       }
 
-      if (useVoice && response.data?.voice!=='/') {
-        const audioSrc = `http://localhost:1702/db/${selectedCategory}_${selectedChannel}/voice.wav`
+      if (useVoice && response.data?.voice !== '/') {
+        const audioSrc = `http://localhost:1700/db/${selectedCategory}_${selectedChannel}/voice.wav`
         console.log(audioSrc)
         const audio = new Audio(audioSrc);
         audio.play().catch((error) => {

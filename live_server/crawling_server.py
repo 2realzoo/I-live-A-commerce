@@ -18,4 +18,4 @@ async def stream(app:FastAPI):
 app = FastAPI(lifespan=stream)
 
 if __name__ == '__main__':
-    uvicorn.run(app, host='127.0.0.1', port=1701)
+    uvicorn.run(app, host='127.0.0.1', port=1700)

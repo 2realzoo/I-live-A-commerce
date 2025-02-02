@@ -41,12 +41,12 @@ const PlaceholderContainer = styled.div`
 const HighlightChart = () => {
   const { category_map, selectedCategory, selectedChannel } = useApp();
 
-  const src = `http://localhost:1702/db/${category_map[selectedCategory]}_${selectedChannel}/${category_map[selectedCategory]}_${selectedChannel}_graph.png`;
+  const src = `http://localhost:1700/db/${category_map[selectedCategory]}_${selectedChannel}/${category_map[selectedCategory]}_${selectedChannel}_graph.png`;
 
   return (
     <ChartContainer>
-      {selectedChannel? <StyledImage src={src} alt="Highlight Chart" /> : <PlaceholderContainer>아직 이미지가 생성되지 않았습니다.</PlaceholderContainer>}
-      
+      {selectedChannel ? <StyledImage src={src} alt="Highlight Chart" /> : <PlaceholderContainer>아직 이미지가 생성되지 않았습니다.</PlaceholderContainer>}
+
     </ChartContainer>
   );
 };
